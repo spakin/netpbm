@@ -12,33 +12,31 @@ import (
 	"unicode"
 )
 
-// DecodeConfig reads and parses the PBM header.
-func DecodeConfig(r io.Reader) (image.Config, error) {
-	// The PBM header is ASCII.  Define a bunch of helper functions to
-	// parse it.
-	nr := newNetpbmReader(bufio.NewReader(r))
-	var err error
-	badness := func() (image.Config, error) {
-		// Something went wrong.  Either we have an error code to
-		// explain what or we make up a generic error message.
+// decodeConfigPBM reads and parses PBM header, either "raw" (binary)
+// or "plain" (ASCII).
+func decodeConfigPBM(r io.Reader) (image.Config, error) {
+	// We really want a bufio.Reader.  If we were given one, use
+	// it.  If not, create a new one.
+	br, ok := r.(*bufio.Reader)
+	if !ok {
+		br = bufio.NewReader(r)
+	}
+	nr := newNetpbmReader(br)
+
+	// Parse the PBM header.
+	header, ok := nr.GetNetpbmHeader()
+	if !ok {
+		err := nr.Err()
 		if err == nil {
 			err = errors.New("Invalid PBM header")
 		}
 		return image.Config{}, err
 	}
 
-	// A PBM file header is "P4", followed by whitespace, followed by a
-	// width in pixels, followed by whitespace, followed by a height in
-	// pixels, followed by a single whitespace.
-	if nr.GetNextByteAsRune() != 'P' || nr.GetNextByteAsRune() != '4' || !unicode.IsSpace(nr.GetNextByteAsRune()) {
-		return badness()
-	}
+	// Store the image configuration.
 	var cfg image.Config
-	cfg.Width = nr.GetNextInt()
-	cfg.Height = nr.GetNextInt()
-	if nr.Err() != nil || !unicode.IsSpace(nr.GetNextByteAsRune()) {
-		return badness()
-	}
+	cfg.Width = header.Width
+	cfg.Height = header.Height
 
 	// A PBM file's color map is 0=white, 1=black.
 	colorMap := make(color.Palette, 2)
@@ -48,23 +46,25 @@ func DecodeConfig(r io.Reader) (image.Config, error) {
 	return cfg, nil
 }
 
-// Decode reads a complete PBM image.
-func Decode(r io.Reader) (image.Image, error) {
+// decodePBM reads a complete "raw" (binary) PBM image.
+func decodePBM(r io.Reader) (image.Image, error) {
 	// Read the image header and use it to prepare a paletted image.
-	header, err := DecodeConfig(r)
+	br := bufio.NewReader(r)
+	header, err := decodeConfigPBM(br)
 	if err != nil {
 		return nil, err
 	}
 	img := image.NewPaletted(image.Rect(0, 0, header.Width, header.Height), header.ColorModel.(color.Palette))
 
 	// Read bits until no more remain.
+	nr := newNetpbmReader(br)
 	buf := make([]byte, 1<<20) // Arbitrary, large, buffer size
 	bitsRemaining := header.Width * header.Height
 	bitNum := 0
 ReadLoop:
 	for {
 		var nRead int
-		nRead, err = r.Read(buf)
+		nRead, err = nr.Read(buf)
 		if nRead == 0 && err != nil {
 			return nil, err
 		}
@@ -87,7 +87,49 @@ ReadLoop:
 	return img, nil
 }
 
-// Indicate that we can decode PBM files.
+// decodePBMPlain reads a complete "plain" (ASCII) PBM image.
+func decodePBMPlain(r io.Reader) (image.Image, error) {
+	// Read the image header and use it to prepare a paletted image.
+	br := bufio.NewReader(r)
+	header, err := decodeConfigPBM(br)
+	if err != nil {
+		return nil, err
+	}
+	img := image.NewPaletted(image.Rect(0, 0, header.Width, header.Height), header.ColorModel.(color.Palette))
+
+	// Define a simple error handler.
+	nr := newNetpbmReader(br)
+	badness := func() (image.Image, error) {
+		// Something went wrong.  Either we have an error code to
+		// explain what or we make up a generic error message.
+		err := nr.Err()
+		if err == nil {
+			err = errors.New("Failed to parse ASCII PBM data")
+		}
+		return img, err
+	}
+
+	// Read bits (ASCII "0" or "1") until no more remain.
+	totalBits := header.Width * header.Height
+	for i := 0; i < totalBits; {
+		ch := nr.GetNextByteAsRune()
+		switch {
+		case nr.Err() != nil:
+			return badness()
+		case unicode.IsSpace(ch):
+			continue
+		case ch == '0' || ch == '1':
+			img.Pix[i] = uint8(ch - '0')
+			i++
+		default:
+			return badness()
+		}
+	}
+	return img, nil
+}
+
+// Indicate that we can decode both raw and plain PBM files.
 func init() {
-	image.RegisterFormat("pbm", "P4", Decode, DecodeConfig)
+	image.RegisterFormat("pbm", "P4", decodePBM, decodeConfigPBM)
+	image.RegisterFormat("pbm", "P1", decodePBMPlain, decodeConfigPBM)
 }

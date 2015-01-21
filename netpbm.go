@@ -44,7 +44,7 @@ func (nr *netpbmReader) GetNextByteAsRune() rune {
 }
 
 // GetNextInt returns the next base-10 integer read from a netpbmReader,
-// skipping whitespace and comments.
+// skipping preceding whitespace and comments.
 func (nr *netpbmReader) GetNextInt() int {
 	// Find the first digit.
 	var c rune
@@ -74,4 +74,52 @@ func (nr *netpbmReader) GetNextInt() int {
 		return -1
 	}
 	return value
+}
+
+// A netpbmHeader encapsulates the components of an image header.
+type netpbmHeader struct {
+	Magic  string // Two-character magic value (e.g., "P6" for PPM)
+	Width  int    // Image width in pixels
+	Height int    // Image height in pixels
+	Maxval int    // Maximum channel value (0-65535)
+}
+
+// GetNetpbmHeader parses the entire header (PBM, PGM, or PPM; raw or
+// plain) and returns it as a netpbmHeader (plus a success value).
+func (nr *netpbmReader) GetNetpbmHeader() (netpbmHeader, bool) {
+	var header netpbmHeader
+
+	// Read the magic value and skip the following whitespace.
+	rune1 := nr.GetNextByteAsRune()
+	if rune1 != 'P' {
+		return netpbmHeader{}, false
+	}
+	rune2 := nr.GetNextByteAsRune()
+	if rune2 < '1' || rune2 > '6' {
+		return netpbmHeader{}, false
+	}
+	if !unicode.IsSpace(nr.GetNextByteAsRune()) {
+		return netpbmHeader{}, false
+	}
+	header.Magic = string(rune1) + string(rune2)
+
+	// Read the width and height.
+	header.Width = nr.GetNextInt()
+	header.Height = nr.GetNextInt()
+
+	// PBM files (raw or plain) don't specify a maximum channel.  All other
+	// formats do.
+	switch header.Magic {
+	case "P1", "P4":
+		header.Maxval = 1
+	default:
+		header.Maxval = nr.GetNextInt()
+	}
+	if nr.Err() != nil || !unicode.IsSpace(nr.GetNextByteAsRune()) ||
+		header.Maxval < 1 || header.Maxval > 65535 {
+		return netpbmHeader{}, false
+	}
+
+	// Return the header and a success code.
+	return header, true
 }
