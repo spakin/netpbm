@@ -9,20 +9,20 @@ package netpbm
 
 import (
 	"bufio"
+	"image/color"
 	"unicode"
 )
 
 // A netpbmReader extends bufio.Reader with the ability to read bytes
 // and numbers while skipping over comments.
 type netpbmReader struct {
-	*bufio.Reader        // Inherit Read, UnreadByte, etc.
-	err           error  // Sticky error state
-	oneByte       []byte // Buffer into which to read a single byte
+	*bufio.Reader       // Inherit Read, UnreadByte, etc.
+	err           error // Sticky error state
 }
 
 // newNetpbmReader allocates, initializes, and returns a new netpbmReader.
 func newNetpbmReader(r *bufio.Reader) *netpbmReader {
-	return &netpbmReader{Reader: r, oneByte: make([]byte, 1)}
+	return &netpbmReader{Reader: r}
 }
 
 // Err returns the netpbmReader's current error state.
@@ -36,11 +36,12 @@ func (nr *netpbmReader) GetNextByteAsRune() rune {
 	if nr.err != nil {
 		return 0
 	}
-	_, nr.err = nr.Read(nr.oneByte)
+	var b byte
+	b, nr.err = nr.ReadByte()
 	if nr.err != nil {
 		return 0
 	}
-	return rune(nr.oneByte[0])
+	return rune(b)
 }
 
 // GetNextInt returns the next base-10 integer read from a netpbmReader,
@@ -78,10 +79,17 @@ func (nr *netpbmReader) GetNextInt() int {
 
 // A netpbmHeader encapsulates the components of an image header.
 type netpbmHeader struct {
-	Magic  string // Two-character magic value (e.g., "P6" for PPM)
-	Width  int    // Image width in pixels
-	Height int    // Image height in pixels
-	Maxval int    // Maximum channel value (0-65535)
+	Magic  string      // Two-character magic value (e.g., "P6" for PPM)
+	Width  int         // Image width in pixels
+	Height int         // Image height in pixels
+	Maxval int         // Maximum channel value (0-65535)
+	Model  color.Model // Color model represented by this image
+}
+
+// We let netpbmHeader implement color.Model.  This lets us piggyback all of
+// our image metadata into an image.Config.
+func (nh netpbmHeader) Convert(c color.Color) color.Color {
+	return nh.Model.Convert(c)
 }
 
 // GetNetpbmHeader parses the entire header (PBM, PGM, or PPM; raw or

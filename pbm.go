@@ -1,5 +1,5 @@
-// This file provides image support for "raw" (binary) Portable BitMap (PBM)
-// files.
+// This file provides image support for both "raw" (binary) and
+// "plain" (ASCII) Portable BitMap (PBM) files.
 
 package netpbm
 
@@ -12,11 +12,11 @@ import (
 	"unicode"
 )
 
-// decodeConfigPBM reads and parses PBM header, either "raw" (binary)
-// or "plain" (ASCII).
+// decodeConfigPBM reads and parses a PBM header, either "raw" (binary) or
+// "plain" (ASCII).
 func decodeConfigPBM(r io.Reader) (image.Config, error) {
-	// We really want a bufio.Reader.  If we were given one, use
-	// it.  If not, create a new one.
+	// We really want a bufio.Reader.  If we were given one, use it.  If
+	// not, create a new one.
 	br, ok := r.(*bufio.Reader)
 	if !ok {
 		br = bufio.NewReader(r)
@@ -50,16 +50,16 @@ func decodeConfigPBM(r io.Reader) (image.Config, error) {
 func decodePBM(r io.Reader) (image.Image, error) {
 	// Read the image header and use it to prepare a paletted image.
 	br := bufio.NewReader(r)
-	header, err := decodeConfigPBM(br)
+	config, err := decodeConfigPBM(br)
 	if err != nil {
 		return nil, err
 	}
-	img := image.NewPaletted(image.Rect(0, 0, header.Width, header.Height), header.ColorModel.(color.Palette))
+	img := image.NewPaletted(image.Rect(0, 0, config.Width, config.Height), config.ColorModel.(color.Palette))
 
 	// Read bits until no more remain.
 	nr := newNetpbmReader(br)
 	buf := make([]byte, 1<<20) // Arbitrary, large, buffer size
-	bitsRemaining := header.Width * header.Height
+	bitsRemaining := config.Width * config.Height
 	bitNum := 0
 ReadLoop:
 	for {
@@ -77,7 +77,7 @@ ReadLoop:
 					// We've read the entire image.
 					break ReadLoop
 				}
-				if bitNum%header.Width == 0 {
+				if bitNum%config.Width == 0 {
 					// Ignore row padding.
 					break
 				}
@@ -91,11 +91,11 @@ ReadLoop:
 func decodePBMPlain(r io.Reader) (image.Image, error) {
 	// Read the image header and use it to prepare a paletted image.
 	br := bufio.NewReader(r)
-	header, err := decodeConfigPBM(br)
+	config, err := decodeConfigPBM(br)
 	if err != nil {
 		return nil, err
 	}
-	img := image.NewPaletted(image.Rect(0, 0, header.Width, header.Height), header.ColorModel.(color.Palette))
+	img := image.NewPaletted(image.Rect(0, 0, config.Width, config.Height), config.ColorModel.(color.Palette))
 
 	// Define a simple error handler.
 	nr := newNetpbmReader(br)
@@ -110,7 +110,7 @@ func decodePBMPlain(r io.Reader) (image.Image, error) {
 	}
 
 	// Read bits (ASCII "0" or "1") until no more remain.
-	totalBits := header.Width * header.Height
+	totalBits := config.Width * config.Height
 	for i := 0; i < totalBits; {
 		ch := nr.GetNextByteAsRune()
 		switch {
