@@ -48,7 +48,7 @@ func decodeConfigPBM(r io.Reader) (image.Config, error) {
 
 // decodePBM reads a complete "raw" (binary) PBM image.
 func decodePBM(r io.Reader) (image.Image, error) {
-	// Read the image header and use it to prepare a paletted image.
+	// Read the image header, and use it to prepare a paletted image.
 	br := bufio.NewReader(r)
 	config, err := decodeConfigPBM(br)
 	if err != nil {
@@ -89,7 +89,7 @@ ReadLoop:
 
 // decodePBMPlain reads a complete "plain" (ASCII) PBM image.
 func decodePBMPlain(r io.Reader) (image.Image, error) {
-	// Read the image header and use it to prepare a paletted image.
+	// Read the image header, and use it to prepare a paletted image.
 	br := bufio.NewReader(r)
 	config, err := decodeConfigPBM(br)
 	if err != nil {

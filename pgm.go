@@ -11,6 +11,28 @@ import (
 	"io"
 )
 
+// A GrayVal is an image.Gray that knows its maximum value.
+type GrayVal struct {
+	*image.Gray       // Grayscale image representation
+	Maxval      uint8 // Value representing 100% white
+}
+
+// NewGrayVal returns a new GrayVal with the given bounds and maximum value.
+func NewGrayVal(r image.Rectangle, m uint8) *GrayVal {
+	return &GrayVal{Gray: image.NewGray(r), Maxval: m}
+}
+
+// A Gray16Val is an image.Gray16 that knows its maximum value.
+type Gray16Val struct {
+	*image.Gray16        // Grayscale image representation
+	Maxval        uint16 // Value representing 100% white
+}
+
+// NewGray16Val returns a new Gray16Val with the given bounds and maximum value.
+func NewGray16Val(r image.Rectangle, m uint16) *Gray16Val {
+	return &Gray16Val{Gray16: image.NewGray16(r), Maxval: m}
+}
+
 // decodeConfigPGM reads and parses a PGM header, either "raw" (binary) or
 // "plain" (ASCII).
 func decodeConfigPGM(r io.Reader) (image.Config, error) {
@@ -49,26 +71,29 @@ func decodeConfigPGM(r io.Reader) (image.Config, error) {
 
 // decodePGM reads a complete "raw" (binary) PGM image.
 func decodePGM(r io.Reader) (image.Image, error) {
-	// Read the image header and use it to prepare a grayscale image.
+	// Read the image header, and use it to prepare a grayscale image.
 	br := bufio.NewReader(r)
 	config, err := decodeConfigPGM(br)
 	if err != nil {
 		return nil, err
 	}
 
-	// Raw PGM images are nice because we can read directly into the image
-	// data.
-	var img image.Image
-	var data []uint8
-	if config.ColorModel.(netpbmHeader).Maxval < 256 {
+	// Create either a GrayVal or a Gray16Val image.
+	var img image.Image                               // Image to return
+	var data []uint8                                  // Image data
+	maxVal := config.ColorModel.(netpbmHeader).Maxval // 100% white value
+	if maxVal < 256 {
 		gray := image.NewGray(image.Rect(0, 0, config.Width, config.Height))
 		data = gray.Pix
-		img = gray
+		img = GrayVal{Gray: gray, Maxval: uint8(maxVal)}
 	} else {
 		gray16 := image.NewGray16(image.Rect(0, 0, config.Width, config.Height))
 		data = gray16.Pix
-		img = gray16
+		img = Gray16Val{Gray16: gray16, Maxval: uint16(maxVal)}
 	}
+
+	// Raw PGM images are nice because we can read directly into the image
+	// data.
 	for len(data) > 0 {
 		nRead, err := br.Read(data)
 		if err != nil && err != io.EOF {
@@ -82,6 +107,66 @@ func decodePGM(r io.Reader) (image.Image, error) {
 	return img, nil
 }
 
+// decodePGMPlain reads a complete "plain" (ASCII) PGM image.
+func decodePGMPlain(r io.Reader) (image.Image, error) {
+	// Read the image header, and use it to prepare a grayscale image.
+	br := bufio.NewReader(r)
+	config, err := decodeConfigPGM(br)
+	if err != nil {
+		return nil, err
+	}
+	var img image.Image // Image to return
+
+	// Define a simple error handler.
+	nr := newNetpbmReader(br)
+	badness := func() (image.Image, error) {
+		// Something went wrong.  Either we have an error code to
+		// explain what or we make up a generic error message.
+		err := nr.Err()
+		if err == nil {
+			err = errors.New("Failed to parse ASCII PGM data")
+		}
+		return img, err
+	}
+
+	// Create either a GrayVal or a Gray16Val image.
+	var data []uint8                                  // Image data
+	maxVal := config.ColorModel.(netpbmHeader).Maxval // 100% white value
+	if maxVal < 256 {
+		gray := image.NewGray(image.Rect(0, 0, config.Width, config.Height))
+		data = gray.Pix
+		img = GrayVal{Gray: gray, Maxval: uint8(maxVal)}
+	} else {
+		gray16 := image.NewGray16(image.Rect(0, 0, config.Width, config.Height))
+		data = gray16.Pix
+		img = Gray16Val{Gray16: gray16, Maxval: uint16(maxVal)}
+	}
+
+	// Read ASCII base-10 integers until no more remain.
+	totalVals := config.Width * config.Height
+	for i := 0; i < totalVals; {
+		val := nr.GetNextInt()
+		switch {
+		case nr.Err() != nil:
+			return badness()
+		case val < 0 || val > maxVal:
+			return badness()
+		case maxVal < 256:
+			data[i] = uint8(val)
+			i++
+		case maxVal < 65536:
+			data[i] = uint8(val >> 8)
+			data[i+1] = uint8(val)
+			i += 2
+		default:
+			return badness()
+		}
+	}
+	return img, nil
+}
+
+// Indicate that we can decode both raw and plain PGM files.
 func init() {
 	image.RegisterFormat("pgm", "P5", decodePGM, decodeConfigPGM)
+	image.RegisterFormat("pgm", "P2", decodePGMPlain, decodeConfigPGM)
 }
