@@ -12,6 +12,18 @@ import (
 	"unicode"
 )
 
+// A BW is simply an alias for an image.Paletted.
+type BW struct{ *image.Paletted }
+
+// NewBW returns a new black-and-white image with the given bounds and
+// maximum value.
+func NewBW(r image.Rectangle) *BW {
+	colorMap := make(color.Palette, 2)
+	colorMap[0] = color.RGBA{255, 255, 255, 255}
+	colorMap[1] = color.RGBA{0, 0, 0, 255}
+	return &BW{image.NewPaletted(r, colorMap)}
+}
+
 // decodeConfigPBM reads and parses a PBM header, either "raw" (binary) or
 // "plain" (ASCII).
 func decodeConfigPBM(r io.Reader) (image.Config, error) {
@@ -48,13 +60,13 @@ func decodeConfigPBM(r io.Reader) (image.Config, error) {
 
 // decodePBM reads a complete "raw" (binary) PBM image.
 func decodePBM(r io.Reader) (image.Image, error) {
-	// Read the image header, and use it to prepare a paletted image.
+	// Read the image header, and use it to prepare a B&W image.
 	br := bufio.NewReader(r)
 	config, err := decodeConfigPBM(br)
 	if err != nil {
 		return nil, err
 	}
-	img := image.NewPaletted(image.Rect(0, 0, config.Width, config.Height), config.ColorModel.(color.Palette))
+	img := NewBW(image.Rect(0, 0, config.Width, config.Height))
 
 	// Read bits until no more remain.
 	nr := newNetpbmReader(br)
@@ -89,13 +101,13 @@ ReadLoop:
 
 // decodePBMPlain reads a complete "plain" (ASCII) PBM image.
 func decodePBMPlain(r io.Reader) (image.Image, error) {
-	// Read the image header, and use it to prepare a paletted image.
+	// Read the image header, and use it to prepare a B&W image.
 	br := bufio.NewReader(r)
 	config, err := decodeConfigPBM(br)
 	if err != nil {
 		return nil, err
 	}
-	img := image.NewPaletted(image.Rect(0, 0, config.Width, config.Height), config.ColorModel.(color.Palette))
+	img := NewBW(image.Rect(0, 0, config.Width, config.Height))
 
 	// Define a simple error handler.
 	nr := newNetpbmReader(br)

@@ -11,26 +11,26 @@ import (
 	"io"
 )
 
-// A GrayVal is an image.Gray that knows its maximum value.
-type GrayVal struct {
+// A Gray is an image.Gray that knows its maximum value.
+type Gray struct {
 	*image.Gray       // Grayscale image representation
 	Maxval      uint8 // Value representing 100% white
 }
 
-// NewGrayVal returns a new GrayVal with the given bounds and maximum value.
-func NewGrayVal(r image.Rectangle, m uint8) *GrayVal {
-	return &GrayVal{Gray: image.NewGray(r), Maxval: m}
+// NewGray returns a new Gray with the given bounds and maximum value.
+func NewGray(r image.Rectangle, m uint8) *Gray {
+	return &Gray{Gray: image.NewGray(r), Maxval: m}
 }
 
-// A Gray16Val is an image.Gray16 that knows its maximum value.
-type Gray16Val struct {
+// A Gray16 is an image.Gray16 that knows its maximum value.
+type Gray16 struct {
 	*image.Gray16        // Grayscale image representation
 	Maxval        uint16 // Value representing 100% white
 }
 
-// NewGray16Val returns a new Gray16Val with the given bounds and maximum value.
-func NewGray16Val(r image.Rectangle, m uint16) *Gray16Val {
-	return &Gray16Val{Gray16: image.NewGray16(r), Maxval: m}
+// NewGray16 returns a new Gray16 with the given bounds and maximum value.
+func NewGray16(r image.Rectangle, m uint16) *Gray16 {
+	return &Gray16{Gray16: image.NewGray16(r), Maxval: m}
 }
 
 // decodeConfigPGM reads and parses a PGM header, either "raw" (binary) or
@@ -78,18 +78,18 @@ func decodePGM(r io.Reader) (image.Image, error) {
 		return nil, err
 	}
 
-	// Create either a GrayVal or a Gray16Val image.
+	// Create either a Gray or a Gray16 image.
 	var img image.Image                               // Image to return
 	var data []uint8                                  // Image data
 	maxVal := config.ColorModel.(netpbmHeader).Maxval // 100% white value
 	if maxVal < 256 {
 		gray := image.NewGray(image.Rect(0, 0, config.Width, config.Height))
 		data = gray.Pix
-		img = GrayVal{Gray: gray, Maxval: uint8(maxVal)}
+		img = Gray{Gray: gray, Maxval: uint8(maxVal)}
 	} else {
 		gray16 := image.NewGray16(image.Rect(0, 0, config.Width, config.Height))
 		data = gray16.Pix
-		img = Gray16Val{Gray16: gray16, Maxval: uint16(maxVal)}
+		img = Gray16{Gray16: gray16, Maxval: uint16(maxVal)}
 	}
 
 	// Raw PGM images are nice because we can read directly into the image
@@ -129,17 +129,17 @@ func decodePGMPlain(r io.Reader) (image.Image, error) {
 		return img, err
 	}
 
-	// Create either a GrayVal or a Gray16Val image.
+	// Create either a Gray or a Gray16 image.
 	var data []uint8                                  // Image data
 	maxVal := config.ColorModel.(netpbmHeader).Maxval // 100% white value
 	if maxVal < 256 {
 		gray := image.NewGray(image.Rect(0, 0, config.Width, config.Height))
 		data = gray.Pix
-		img = GrayVal{Gray: gray, Maxval: uint8(maxVal)}
+		img = Gray{Gray: gray, Maxval: uint8(maxVal)}
 	} else {
 		gray16 := image.NewGray16(image.Rect(0, 0, config.Width, config.Height))
 		data = gray16.Pix
-		img = Gray16Val{Gray16: gray16, Maxval: uint16(maxVal)}
+		img = Gray16{Gray16: gray16, Maxval: uint16(maxVal)}
 	}
 
 	// Read ASCII base-10 integers until no more remain.
