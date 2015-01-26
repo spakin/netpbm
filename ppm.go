@@ -22,10 +22,12 @@ type RGBM struct {
 	Stride int
 	// Rect is the image's bounds.
 	Rect image.Rectangle
+	// Model is the image's color model.
+	Model color.Model
 }
 
 // ColorModel returns the RGBM image's color model.
-func (p *RGBM) ColorModel() color.Model { return npcolor.RGBMModel }
+func (p *RGBM) ColorModel() color.Model { return p.Model }
 
 // Bounds returns the domain for which At can return non-zero color.  The
 // bounds do not necessarily contain the point (0, 0).
@@ -59,7 +61,7 @@ func (p *RGBM) Set(x, y int, c color.Color) {
 		return
 	}
 	i := p.PixOffset(x, y)
-	c1 := npcolor.RGBMModel.Convert(c).(npcolor.RGBM)
+	c1 := p.Model.Convert(c).(npcolor.RGBM)
 	p.Pix[i+0] = c1.R
 	p.Pix[i+1] = c1.G
 	p.Pix[i+2] = c1.B
@@ -116,11 +118,12 @@ func (p *RGBM) Opaque() bool {
 	return true
 }
 
-// NewRGBM returns a new RGBM with the given bounds.
-func NewRGBM(r image.Rectangle) *RGBM {
+// NewRGBM returns a new RGBM with the given bounds and maximum channel value.
+func NewRGBM(r image.Rectangle, m uint8) *RGBM {
 	w, h := r.Dx(), r.Dy()
 	pix := make([]uint8, 4*w*h)
-	return &RGBM{pix, 4 * w, r}
+	model := npcolor.NewRGBMModel(m)
+	return &RGBM{pix, 4 * w, r, model}
 }
 
 // An RGBM64 is an in-memory image whose At method returns npcolor.RGBM64
@@ -135,10 +138,12 @@ type RGBM64 struct {
 	Stride int
 	// Rect is the image's bounds.
 	Rect image.Rectangle
+	// Model is the image's color model.
+	Model color.Model
 }
 
 // ColorModel returns the RGBM64 image's color model.
-func (p *RGBM64) ColorModel() color.Model { return npcolor.RGBM64Model }
+func (p *RGBM64) ColorModel() color.Model { return p.Model }
 
 // Bounds returns the domain for which At can return non-zero color.  The
 // bounds do not necessarily contain the point (0, 0).
@@ -177,7 +182,7 @@ func (p *RGBM64) Set(x, y int, c color.Color) {
 		return
 	}
 	i := p.PixOffset(x, y)
-	c1 := npcolor.RGBM64Model.Convert(c).(npcolor.RGBM64)
+	c1 := p.Model.Convert(c).(npcolor.RGBM64)
 	p.Pix[i+0] = uint8(c1.R >> 8)
 	p.Pix[i+1] = uint8(c1.R)
 	p.Pix[i+2] = uint8(c1.G >> 8)
@@ -242,11 +247,13 @@ func (p *RGBM64) Opaque() bool {
 	return true
 }
 
-// NewRGBM64 returns a new RGBM64 with the given bounds.
-func NewRGBM64(r image.Rectangle) *RGBM64 {
+// NewRGBM64 returns a new RGBM64 with the given bounds and maximum channel
+// value.
+func NewRGBM64(r image.Rectangle, m uint16) *RGBM64 {
 	w, h := r.Dx(), r.Dy()
 	pix := make([]uint8, 8*w*h)
-	return &RGBM64{pix, 8 * w, r}
+	model := npcolor.NewRGBM64Model(m)
+	return &RGBM64{pix, 8 * w, r, model}
 }
 
 // decodeConfigPPM reads and parses a PPM header, either "raw" (binary) or
@@ -272,9 +279,9 @@ func decodeConfigPPM(r io.Reader) (image.Config, error) {
 
 	// Define the color model using the color channel's maximum value.
 	if header.Maxval < 256 {
-		header.Model = npcolor.RGBMModel
+		header.Model = npcolor.NewRGBMModel(uint8(header.Maxval))
 	} else {
-		header.Model = npcolor.RGBM64Model
+		header.Model = npcolor.NewRGBM64Model(uint16(header.Maxval))
 	}
 
 	// Store and return the image configuration.
@@ -301,12 +308,12 @@ func decodePPM(r io.Reader) (image.Image, error) {
 	nPixels := config.Width * config.Height
 	maxVal := config.ColorModel.(netpbmHeader).Maxval // 100% white value
 	if maxVal < 256 {
-		rgb := NewRGBM(image.Rect(0, 0, config.Width, config.Height))
+		rgb := NewRGBM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
 		data = rgb.Pix
 		rgbData = make([]uint8, nPixels*3)
 		img = rgb
 	} else {
-		rgb := NewRGBM64(image.Rect(0, 0, config.Width, config.Height))
+		rgb := NewRGBM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
 		data = rgb.Pix
 		rgbData = make([]uint8, nPixels*3*2)
 		img = rgb
@@ -369,11 +376,11 @@ func decodePPMPlain(r io.Reader) (image.Image, error) {
 	var data []uint8                                  // Image data
 	maxVal := config.ColorModel.(netpbmHeader).Maxval // 100% white value
 	if maxVal < 256 {
-		rgb := NewRGBM(image.Rect(0, 0, config.Width, config.Height))
+		rgb := NewRGBM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
 		data = rgb.Pix
 		img = rgb
 	} else {
-		rgb := NewRGBM64(image.Rect(0, 0, config.Width, config.Height))
+		rgb := NewRGBM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
 		data = rgb.Pix
 		img = rgb
 	}
