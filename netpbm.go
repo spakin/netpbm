@@ -1,7 +1,8 @@
 /*
 
-	Package netpbm implements image decoders and encoders for the
-	Netpbm image formats.
+	Package netpbm implements image decoders and encoders for the Netpbm
+	image formats (PBM, PGM, and PPM), in both "raw" (binary) and "plain"
+	(ASCII) versions.
 
 	The Netpbm home page is at http://netpbm.sourceforge.net/.
 */
@@ -9,7 +10,6 @@ package netpbm
 
 import (
 	"bufio"
-	"image/color"
 	"unicode"
 )
 
@@ -79,17 +79,10 @@ func (nr *netpbmReader) GetNextInt() int {
 
 // A netpbmHeader encapsulates the components of an image header.
 type netpbmHeader struct {
-	Magic  string      // Two-character magic value (e.g., "P6" for PPM)
-	Width  int         // Image width in pixels
-	Height int         // Image height in pixels
-	Maxval int         // Maximum channel value (0-65535)
-	Model  color.Model // Color model represented by this image
-}
-
-// We let netpbmHeader implement color.Model.  This lets us piggyback all of
-// our image metadata into an image.Config.
-func (nh netpbmHeader) Convert(c color.Color) color.Color {
-	return nh.Model.Convert(c)
+	Magic  string // Two-character magic value (e.g., "P6" for PPM)
+	Width  int    // Image width in pixels
+	Height int    // Image height in pixels
+	Maxval int    // Maximum channel value (0-65535)
 }
 
 // GetNetpbmHeader parses the entire header (PBM, PGM, or PPM; raw or
