@@ -14,8 +14,8 @@ import (
 
 // An RGBM is an in-memory image whose At method returns npcolor.RGBM values.
 type RGBM struct {
-	// Pix holds the image's pixels, in R, G, B, M order. The pixel at (x,
-	// y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*4].
+	// Pix holds the image's pixels, in R, G, B (no M) order. The pixel at
+	// (x, y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*3].
 	Pix []uint8
 	// Stride is the Pix stride (in bytes) between vertically adjacent
 	// pixels.
@@ -23,7 +23,7 @@ type RGBM struct {
 	// Rect is the image's bounds.
 	Rect image.Rectangle
 	// Model is the image's color model.
-	Model color.Model
+	Model npcolor.RGBMModel
 }
 
 // ColorModel returns the RGBM image's color model.
@@ -46,13 +46,13 @@ func (p *RGBM) RGBMAt(x, y int) npcolor.RGBM {
 		return npcolor.RGBM{}
 	}
 	i := p.PixOffset(x, y)
-	return npcolor.RGBM{p.Pix[i+0], p.Pix[i+1], p.Pix[i+2], p.Pix[i+3]}
+	return npcolor.RGBM{p.Pix[i+0], p.Pix[i+1], p.Pix[i+2], p.Model.M}
 }
 
 // PixOffset returns the index of the first element of Pix that corresponds to
 // the pixel at (x, y).
 func (p *RGBM) PixOffset(x, y int) int {
-	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*4
+	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*3
 }
 
 // Set sets the pixel at (x, y) to a given color, expressed as a color.Color.
@@ -65,7 +65,6 @@ func (p *RGBM) Set(x, y int, c color.Color) {
 	p.Pix[i+0] = c1.R
 	p.Pix[i+1] = c1.G
 	p.Pix[i+2] = c1.B
-	p.Pix[i+3] = c1.M
 }
 
 // SetRGBM sets the pixel at (x, y) to a given color, expressed as an
@@ -75,10 +74,13 @@ func (p *RGBM) SetRGBM(x, y int, c npcolor.RGBM) {
 		return
 	}
 	i := p.PixOffset(x, y)
-	p.Pix[i+0] = c.R
-	p.Pix[i+1] = c.G
-	p.Pix[i+2] = c.B
-	p.Pix[i+3] = c.M
+	if c.M == p.Model.M {
+		p.Pix[i+0] = c.R
+		p.Pix[i+1] = c.G
+		p.Pix[i+2] = c.B
+	} else {
+		p.Set(x, y, c)
+	}
 }
 
 // SubImage returns an image representing the portion of the image p visible
@@ -100,30 +102,12 @@ func (p *RGBM) SubImage(r image.Rectangle) image.Image {
 	}
 }
 
-// Opaque scans the entire image and reports whether it is fully opaque.
-func (p *RGBM) Opaque() bool {
-	if p.Rect.Empty() {
-		return true
-	}
-	i0, i1 := 3, p.Rect.Dx()*4
-	for y := p.Rect.Min.Y; y < p.Rect.Max.Y; y++ {
-		for i := i0; i < i1; i += 4 {
-			if p.Pix[i] != 0xff {
-				return false
-			}
-		}
-		i0 += p.Stride
-		i1 += p.Stride
-	}
-	return true
-}
-
 // NewRGBM returns a new RGBM with the given bounds and maximum channel value.
 func NewRGBM(r image.Rectangle, m uint8) *RGBM {
 	w, h := r.Dx(), r.Dy()
-	pix := make([]uint8, 4*w*h)
+	pix := make([]uint8, 3*w*h)
 	model := npcolor.RGBMModel{m}
-	return &RGBM{pix, 4 * w, r, model}
+	return &RGBM{pix, 3 * w, r, model}
 }
 
 // An RGBM64 is an in-memory image whose At method returns npcolor.RGBM64
@@ -229,31 +213,13 @@ func (p *RGBM64) SubImage(r image.Rectangle) image.Image {
 	}
 }
 
-// Opaque scans the entire image and reports whether it is fully opaque.
-func (p *RGBM64) Opaque() bool {
-	if p.Rect.Empty() {
-		return true
-	}
-	i0, i1 := 6, p.Rect.Dx()*8
-	for y := p.Rect.Min.Y; y < p.Rect.Max.Y; y++ {
-		for i := i0; i < i1; i += 8 {
-			if p.Pix[i+0] != 0xff || p.Pix[i+1] != 0xff {
-				return false
-			}
-		}
-		i0 += p.Stride
-		i1 += p.Stride
-	}
-	return true
-}
-
 // NewRGBM64 returns a new RGBM64 with the given bounds and maximum channel
 // value.
 func NewRGBM64(r image.Rectangle, m uint16) *RGBM64 {
 	w, h := r.Dx(), r.Dy()
-	pix := make([]uint8, 8*w*h)
+	pix := make([]uint8, 6*w*h)
 	model := npcolor.RGBM64Model{m}
-	return &RGBM64{pix, 8 * w, r, model}
+	return &RGBM64{pix, 6 * w, r, model}
 }
 
 // decodeConfigPPM reads and parses a PPM header, either "raw" (binary) or
@@ -300,54 +266,34 @@ func decodePPM(r io.Reader) (image.Image, error) {
 
 	// Create either a Color or a Color64 image.
 	var img image.Image // Image to return
-	var data []uint8    // RGBA image data
-	var rgbData []uint8 // RGB file data
+	var data []uint8    // RGB (no M) image data
 	var maxVal uint     // 100% white value
-	nPixels := config.Width * config.Height
 	switch model := config.ColorModel.(type) {
 	case npcolor.RGBMModel:
 		maxVal = uint(model.M)
 		rgb := NewRGBM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
 		data = rgb.Pix
-		rgbData = make([]uint8, nPixels*3)
 		img = rgb
 	case npcolor.RGBM64Model:
 		maxVal = uint(model.M)
 		rgb := NewRGBM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
 		data = rgb.Pix
-		rgbData = make([]uint8, nPixels*3*2)
 		img = rgb
 	default:
 		panic("Unexpected color model")
 	}
 
-	// Read RGB (no A) data into a holding buffer.
-	rgbDataLeft := rgbData // RGB data left to read
-	for len(rgbDataLeft) > 0 {
-		nRead, err := br.Read(rgbDataLeft)
+	// Raw PPM images are nice because we can read directly into the image
+	// data.
+	for len(data) > 0 {
+		nRead, err := br.Read(data)
 		if err != nil && err != io.EOF {
 			return img, err
 		}
 		if nRead == 0 {
 			return img, errors.New("Failed to read binary PPM data")
 		}
-		rgbDataLeft = rgbDataLeft[nRead:]
-	}
-
-	// Spread out RGB data into RGBA.
-	nCopy := 3                       // Copy this many bytes from the input...
-	nAlpha := 1                      // ...then generate this many bytes of alpha.
-	opaque := []uint8{uint8(maxVal)} // Maximum opacity
-	if maxVal >= 256 {
-		nCopy *= 2
-		nAlpha *= 2
-		opaque = []uint8{uint8(maxVal >> 8), uint8(maxVal)}
-	}
-	for p, s, d := 0, 0, 0; p < nPixels; p++ {
-		copy(data[d:d+nCopy], rgbData[s:s+nCopy])
-		copy(data[d+nCopy:d+nCopy+nAlpha], opaque)
-		s += nCopy
-		d += nCopy + nAlpha
+		data = data[nRead:]
 	}
 	return img, nil
 }
@@ -394,40 +340,29 @@ func decodePPMPlain(r io.Reader) (image.Image, error) {
 
 	// Read ASCII base-10 integers until no more remain.
 	if maxVal < 256 {
-		for i := 0; i < len(data); {
-			for d := 0; d < 3; d++ {
-				val := nr.GetNextInt()
-				switch {
-				case nr.Err() != nil:
-					return badness()
-				case val < 0 || val > maxVal:
-					return badness()
-				default:
-					data[i] = uint8(val)
-					i++
-				}
+		for i := 0; i < len(data); i++ {
+			val := nr.GetNextInt()
+			switch {
+			case nr.Err() != nil:
+				return badness()
+			case val < 0 || val > maxVal:
+				return badness()
+			default:
+				data[i] = uint8(val)
 			}
-			data[i] = uint8(maxVal)
-			i++
 		}
 	} else {
-		for i := 0; i < len(data); {
-			for d := 0; d < 3; d++ {
-				val := nr.GetNextInt()
-				switch {
-				case nr.Err() != nil:
-					return badness()
-				case val < 0 || val > maxVal:
-					return badness()
-				default:
-					data[i] = uint8(val >> 8)
-					data[i+1] = uint8(val)
-					i += 2
-				}
+		for i := 0; i < len(data); i += 2 {
+			val := nr.GetNextInt()
+			switch {
+			case nr.Err() != nil:
+				return badness()
+			case val < 0 || val > maxVal:
+				return badness()
+			default:
+				data[i] = uint8(val >> 8)
+				data[i+1] = uint8(val)
 			}
-			data[i] = uint8(maxVal >> 8)
-			data[i+1] = uint8(maxVal)
-			i += 2
 		}
 	}
 	return img, nil

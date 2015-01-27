@@ -29,7 +29,7 @@ type RGBMModel struct {
 
 // Convert converts an arbitrary color to an RGBM.
 func (model RGBMModel) Convert(c color.Color) color.Color {
-	if _, ok := c.(RGBM); ok {
+	if rgb, ok := c.(RGBM); ok && rgb.M == model.M {
 		return c
 	}
 	m := uint32(model.M)
@@ -64,7 +64,7 @@ type RGBM64Model struct {
 
 // Convert converts an arbitrary color to an RGBM64.
 func (model RGBM64Model) Convert(c color.Color) color.Color {
-	if _, ok := c.(RGBM64); ok {
+	if rgb, ok := c.(RGBM64); ok && rgb.M == model.M {
 		return c
 	}
 	m := uint32(model.M)
