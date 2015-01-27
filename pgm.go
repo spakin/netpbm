@@ -6,31 +6,210 @@ package netpbm
 import (
 	"bufio"
 	"errors"
+	"github.com/spakin/netpbm/npcolor"
 	"image"
 	"image/color"
 	"io"
 )
 
-// A Gray is an image.Gray that knows its maximum value.
-type Gray struct {
-	*image.Gray       // Grayscale image representation
-	Maxval      uint8 // Value representing 100% white
+// GrayM is an in-memory image whose At method returns npcolor.GrayM values.
+type GrayM struct {
+	// Pix holds the image's pixels, as gray values. The pixel at
+	// (x, y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*1].
+	Pix []uint8
+	// Stride is the Pix stride (in bytes) between vertically adjacent pixels.
+	Stride int
+	// Rect is the image's bounds.
+	Rect image.Rectangle
+	// Model is the image's color model.
+	Model npcolor.GrayMModel
 }
 
-// NewGray returns a new Gray with the given bounds and maximum value.
-func NewGray(r image.Rectangle, m uint8) *Gray {
-	return &Gray{Gray: image.NewGray(r), Maxval: m}
+// ColorModel returns the GrayM image's color model.
+func (p *GrayM) ColorModel() color.Model { return p.Model }
+
+// Bounds returns the domain for which At can return non-zero color.  The
+// bounds do not necessarily contain the point (0, 0).
+func (p *GrayM) Bounds() image.Rectangle { return p.Rect }
+
+// At returns the color of the pixel at (x, y) as a color.Color.
+// At(Bounds().Min.X, Bounds().Min.Y) returns the upper-left pixel of the grid.
+// At(Bounds().Max.X-1, Bounds().Max.Y-1) returns the lower-right one.
+func (p *GrayM) At(x, y int) color.Color {
+	return p.GrayMAt(x, y)
 }
 
-// A Gray16 is an image.Gray16 that knows its maximum value.
-type Gray16 struct {
-	*image.Gray16        // Grayscale image representation
-	Maxval        uint16 // Value representing 100% white
+// GrayMAt returns the color of the pixel at (x, y) as an npcolor.GrayM.
+func (p *GrayM) GrayMAt(x, y int) npcolor.GrayM {
+	if !(image.Point{x, y}.In(p.Rect)) {
+		return npcolor.GrayM{}
+	}
+	i := p.PixOffset(x, y)
+	return npcolor.GrayM{p.Pix[i], p.Model.M}
 }
 
-// NewGray16 returns a new Gray16 with the given bounds and maximum value.
-func NewGray16(r image.Rectangle, m uint16) *Gray16 {
-	return &Gray16{Gray16: image.NewGray16(r), Maxval: m}
+// PixOffset returns the index of the first element of Pix that corresponds to
+// the pixel at (x, y).
+func (p *GrayM) PixOffset(x, y int) int {
+	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*1
+}
+
+// Set sets the pixel at (x, y) to a given color, expressed as a color.Color.
+func (p *GrayM) Set(x, y int, c color.Color) {
+	if !(image.Point{x, y}.In(p.Rect)) {
+		return
+	}
+	i := p.PixOffset(x, y)
+	p.Pix[i] = p.Model.Convert(c).(npcolor.GrayM).Y
+}
+
+// SetGrayM sets the pixel at (x, y) to a given color, expressed as an
+// npcolor.GrayM.
+func (p *GrayM) SetGrayM(x, y int, c npcolor.GrayM) {
+	if !(image.Point{x, y}.In(p.Rect)) {
+		return
+	}
+	i := p.PixOffset(x, y)
+	if c.M == p.Model.M {
+		p.Pix[i] = c.Y
+	} else {
+		p.Set(x, y, c)
+	}
+}
+
+// SubImage returns an image representing the portion of the image p visible
+// through r. The returned value shares pixels with the original image.
+func (p *GrayM) SubImage(r image.Rectangle) image.Image {
+	r = r.Intersect(p.Rect)
+	// If r1 and r2 are Rectangles, r1.Intersect(r2) is not guaranteed to
+	// be inside either r1 or r2 if the intersection is empty. Without
+	// explicitly checking for this, the Pix[i:] expression below can
+	// panic.
+	if r.Empty() {
+		return &GrayM{}
+	}
+	i := p.PixOffset(r.Min.X, r.Min.Y)
+	return &GrayM{
+		Pix:    p.Pix[i:],
+		Stride: p.Stride,
+		Rect:   r,
+	}
+}
+
+// Opaque scans the entire image and reports whether it is fully opaque.
+func (p *GrayM) Opaque() bool {
+	return true
+}
+
+// NewGrayM returns a new GrayM with the given bounds and maximum channel
+// value.
+func NewGrayM(r image.Rectangle, m uint8) *GrayM {
+	w, h := r.Dx(), r.Dy()
+	pix := make([]uint8, 1*w*h)
+	model := npcolor.GrayMModel{m}
+	return &GrayM{pix, 1 * w, r, model}
+}
+
+// GrayM32 is an in-memory image whose At method returns npcolor.GrayM32 values.
+type GrayM32 struct {
+	// Pix holds the image's pixels, as gray values. The pixel at
+	// (x, y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*1].
+	Pix []uint8
+	// Stride is the Pix stride (in bytes) between vertically adjacent pixels.
+	Stride int
+	// Rect is the image's bounds.
+	Rect image.Rectangle
+	// Model is the image's color model.
+	Model npcolor.GrayM32Model
+}
+
+// ColorModel returns the GrayM32 image's color model.
+func (p *GrayM32) ColorModel() color.Model { return p.Model }
+
+// Bounds returns the domain for which At can return non-zero color.  The
+// bounds do not necessarily contain the point (0, 0).
+func (p *GrayM32) Bounds() image.Rectangle { return p.Rect }
+
+// At returns the color of the pixel at (x, y) as a color.Color.
+// At(Bounds().Min.X, Bounds().Min.Y) returns the upper-left pixel of the grid.
+// At(Bounds().Max.X-1, Bounds().Max.Y-1) returns the lower-right one.
+func (p *GrayM32) At(x, y int) color.Color {
+	return p.GrayM32At(x, y)
+}
+
+// GrayM32At returns the color of the pixel at (x, y) as an npcolor.GrayM32.
+func (p *GrayM32) GrayM32At(x, y int) npcolor.GrayM32 {
+	if !(image.Point{x, y}.In(p.Rect)) {
+		return npcolor.GrayM32{}
+	}
+	i := p.PixOffset(x, y)
+	return npcolor.GrayM32{uint16(p.Pix[i+0])<<8 | uint16(p.Pix[i+1]), p.Model.M}
+}
+
+// PixOffset returns the index of the first element of Pix that corresponds to
+// the pixel at (x, y).
+func (p *GrayM32) PixOffset(x, y int) int {
+	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*1
+}
+
+// Set sets the pixel at (x, y) to a given color, expressed as a color.Color.
+func (p *GrayM32) Set(x, y int, c color.Color) {
+	if !(image.Point{x, y}.In(p.Rect)) {
+		return
+	}
+	i := p.PixOffset(x, y)
+	c1 := p.Model.Convert(c).(npcolor.GrayM32)
+	p.Pix[i+0] = uint8(c1.Y >> 8)
+	p.Pix[i+1] = uint8(c1.Y)
+
+}
+
+// SetGrayM32 sets the pixel at (x, y) to a given color, expressed as an
+// npcolor.GrayM32.
+func (p *GrayM32) SetGrayM32(x, y int, c npcolor.GrayM32) {
+	if !(image.Point{x, y}.In(p.Rect)) {
+		return
+	}
+	i := p.PixOffset(x, y)
+	if c.M == p.Model.M {
+		p.Pix[i+0] = uint8(c.Y >> 8)
+		p.Pix[i+1] = uint8(c.Y)
+	} else {
+		p.Set(x, y, c)
+	}
+}
+
+// SubImage returns an image representing the portion of the image p visible
+// through r. The returned value shares pixels with the original image.
+func (p *GrayM32) SubImage(r image.Rectangle) image.Image {
+	r = r.Intersect(p.Rect)
+	// If r1 and r2 are Rectangles, r1.Intersect(r2) is not guaranteed to
+	// be inside either r1 or r2 if the intersection is empty. Without
+	// explicitly checking for this, the Pix[i:] expression below can
+	// panic.
+	if r.Empty() {
+		return &GrayM32{}
+	}
+	i := p.PixOffset(r.Min.X, r.Min.Y)
+	return &GrayM32{
+		Pix:    p.Pix[i:],
+		Stride: p.Stride,
+		Rect:   r,
+	}
+}
+
+// Opaque scans the entire image and reports whether it is fully opaque.
+func (p *GrayM32) Opaque() bool {
+	return true
+}
+
+// NewGrayM32 returns a new GrayM32 with the given bounds and maximum channel
+// value.
+func NewGrayM32(r image.Rectangle, m uint16) *GrayM32 {
+	w, h := r.Dx(), r.Dy()
+	pix := make([]uint8, 1*w*h)
+	model := npcolor.GrayM32Model{m}
+	return &GrayM32{pix, 1 * w, r, model}
 }
 
 // decodeConfigPGM reads and parses a PGM header, either "raw" (binary) or
@@ -54,18 +233,15 @@ func decodeConfigPGM(r io.Reader) (image.Config, error) {
 		return image.Config{}, err
 	}
 
-	// Define the color model using the gray channel's maximum value.
-	if header.Maxval < 256 {
-		header.Model = color.GrayModel
-	} else {
-		header.Model = color.Gray16Model
-	}
-
 	// Store and return the image configuration.
 	var cfg image.Config
 	cfg.Width = header.Width
 	cfg.Height = header.Height
-	cfg.ColorModel = header
+	if header.Maxval < 256 {
+		cfg.ColorModel = npcolor.GrayMModel{uint8(header.Maxval)}
+	} else {
+		cfg.ColorModel = npcolor.GrayM32Model{uint16(header.Maxval)}
+	}
 	return cfg, nil
 }
 
@@ -79,17 +255,21 @@ func decodePGM(r io.Reader) (image.Image, error) {
 	}
 
 	// Create either a Gray or a Gray16 image.
-	var img image.Image                               // Image to return
-	var data []uint8                                  // Image data
-	maxVal := config.ColorModel.(netpbmHeader).Maxval // 100% white value
-	if maxVal < 256 {
-		gray := image.NewGray(image.Rect(0, 0, config.Width, config.Height))
+	var img image.Image // Image to return
+	var data []uint8    // Image data
+	var maxVal uint     // 100% white value
+	switch model := config.ColorModel.(type) {
+	case npcolor.GrayMModel:
+		maxVal = uint(model.M)
+		gray := NewGrayM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
 		data = gray.Pix
-		img = Gray{Gray: gray, Maxval: uint8(maxVal)}
-	} else {
-		gray16 := image.NewGray16(image.Rect(0, 0, config.Width, config.Height))
-		data = gray16.Pix
-		img = Gray16{Gray16: gray16, Maxval: uint16(maxVal)}
+		img = gray
+	case npcolor.GrayM32Model:
+		gray := NewGrayM32(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
+		data = gray.Pix
+		img = gray
+	default:
+		panic("Unexpected color model")
 	}
 
 	// Raw PGM images are nice because we can read directly into the image
@@ -130,36 +310,47 @@ func decodePGMPlain(r io.Reader) (image.Image, error) {
 	}
 
 	// Create either a Gray or a Gray16 image.
-	var data []uint8                                  // Image data
-	maxVal := config.ColorModel.(netpbmHeader).Maxval // 100% white value
-	if maxVal < 256 {
-		gray := image.NewGray(image.Rect(0, 0, config.Width, config.Height))
+	var data []uint8 // Image data
+	var maxVal int   // 100% white value
+	switch model := config.ColorModel.(type) {
+	case npcolor.GrayMModel:
+		maxVal = int(model.M)
+		gray := NewGrayM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
 		data = gray.Pix
-		img = Gray{Gray: gray, Maxval: uint8(maxVal)}
-	} else {
-		gray16 := image.NewGray16(image.Rect(0, 0, config.Width, config.Height))
-		data = gray16.Pix
-		img = Gray16{Gray16: gray16, Maxval: uint16(maxVal)}
+		img = gray
+	case npcolor.GrayM32Model:
+		gray := NewGrayM32(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
+		data = gray.Pix
+		img = gray
+	default:
+		panic("Unexpected color model")
 	}
 
 	// Read ASCII base-10 integers until no more remain.
-	totalVals := config.Width * config.Height
-	for i := 0; i < totalVals; {
-		val := nr.GetNextInt()
-		switch {
-		case nr.Err() != nil:
-			return badness()
-		case val < 0 || val > maxVal:
-			return badness()
-		case maxVal < 256:
-			data[i] = uint8(val)
-			i++
-		case maxVal < 65536:
-			data[i] = uint8(val >> 8)
-			data[i+1] = uint8(val)
-			i += 2
-		default:
-			return badness()
+	if maxVal < 256 {
+		for i := 0; i < len(data); i++ {
+			val := nr.GetNextInt()
+			switch {
+			case nr.Err() != nil:
+				return badness()
+			case val < 0 || val > maxVal:
+				return badness()
+			default:
+				data[i] = uint8(val)
+			}
+		}
+	} else {
+		for i := 0; i < len(data); i += 2 {
+			val := nr.GetNextInt()
+			switch {
+			case nr.Err() != nil:
+				return badness()
+			case val < 0 || val > maxVal:
+				return badness()
+			default:
+				data[i] = uint8(val >> 8)
+				data[i+1] = uint8(val)
+			}
 		}
 	}
 	return img, nil

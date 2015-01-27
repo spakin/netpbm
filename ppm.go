@@ -102,6 +102,11 @@ func (p *RGBM) SubImage(r image.Rectangle) image.Image {
 	}
 }
 
+// Opaque scans the entire image and reports whether it is fully opaque.
+func (p *RGBM) Opaque() bool {
+	return true
+}
+
 // NewRGBM returns a new RGBM with the given bounds and maximum channel value.
 func NewRGBM(r image.Rectangle, m uint8) *RGBM {
 	w, h := r.Dx(), r.Dy()
@@ -123,7 +128,7 @@ type RGBM64 struct {
 	// Rect is the image's bounds.
 	Rect image.Rectangle
 	// Model is the image's color model.
-	Model color.Model
+	Model npcolor.RGBM64Model
 }
 
 // ColorModel returns the RGBM64 image's color model.
@@ -150,14 +155,14 @@ func (p *RGBM64) RGBM64At(x, y int) npcolor.RGBM64 {
 		uint16(p.Pix[i+0])<<8 | uint16(p.Pix[i+1]),
 		uint16(p.Pix[i+2])<<8 | uint16(p.Pix[i+3]),
 		uint16(p.Pix[i+4])<<8 | uint16(p.Pix[i+5]),
-		uint16(p.Pix[i+6])<<8 | uint16(p.Pix[i+7]),
+		p.Model.M,
 	}
 }
 
 // PixOffset returns the index of the first element of Pix that corresponds to
 // the pixel at (x, y).
 func (p *RGBM64) PixOffset(x, y int) int {
-	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*8
+	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*6
 }
 
 // Set sets the pixel at (x, y) to a given color, expressed as a color.Color.
@@ -173,8 +178,6 @@ func (p *RGBM64) Set(x, y int, c color.Color) {
 	p.Pix[i+3] = uint8(c1.G)
 	p.Pix[i+4] = uint8(c1.B >> 8)
 	p.Pix[i+5] = uint8(c1.B)
-	p.Pix[i+6] = uint8(c1.M >> 8)
-	p.Pix[i+7] = uint8(c1.M)
 }
 
 // SetRGBM64 sets the pixel at (x, y) to a given color, expressed as an
@@ -184,14 +187,16 @@ func (p *RGBM64) SetRGBM64(x, y int, c npcolor.RGBM64) {
 		return
 	}
 	i := p.PixOffset(x, y)
-	p.Pix[i+0] = uint8(c.R >> 8)
-	p.Pix[i+1] = uint8(c.R)
-	p.Pix[i+2] = uint8(c.G >> 8)
-	p.Pix[i+3] = uint8(c.G)
-	p.Pix[i+4] = uint8(c.B >> 8)
-	p.Pix[i+5] = uint8(c.B)
-	p.Pix[i+6] = uint8(c.M >> 8)
-	p.Pix[i+7] = uint8(c.M)
+	if c.M == p.Model.M {
+		p.Pix[i+0] = uint8(c.R >> 8)
+		p.Pix[i+1] = uint8(c.R)
+		p.Pix[i+2] = uint8(c.G >> 8)
+		p.Pix[i+3] = uint8(c.G)
+		p.Pix[i+4] = uint8(c.B >> 8)
+		p.Pix[i+5] = uint8(c.B)
+	} else {
+		p.Set(x, y, c)
+	}
 }
 
 // SubImage returns an image representing the portion of the image p visible
@@ -211,6 +216,11 @@ func (p *RGBM64) SubImage(r image.Rectangle) image.Image {
 		Stride: p.Stride,
 		Rect:   r,
 	}
+}
+
+// Opaque scans the entire image and reports whether it is fully opaque.
+func (p *RGBM64) Opaque() bool {
+	return true
 }
 
 // NewRGBM64 returns a new RGBM64 with the given bounds and maximum channel

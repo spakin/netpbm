@@ -5,6 +5,66 @@ import (
 	"image/color"
 )
 
+// GrayM represents an 8-bit grayscale value and the value to represent 100%
+// white.  Because GrayM does not support alpha channels it does make sense to
+// describe it as either "alpha-premultiplied" or "non-alpha-premultiplied".
+type GrayM struct {
+	Y, M uint8
+}
+
+// RGBA converts a GrayM to alpha-premultiplied R, G, B, and A.
+func (c GrayM) RGBA() (r, g, b, a uint32) {
+	m := uint32(c.M)
+	y := (uint32(c.Y) * 0xffff) / m
+	return y, y, y, 0xffff
+}
+
+// A GrayMModel represents the maximum value of a GrayM (0-255).
+type GrayMModel struct {
+	M uint8 // Maximum value of the luminance channel
+}
+
+// Convert converts an arbitrary color to a GrayM.
+func (model GrayMModel) Convert(c color.Color) color.Color {
+	if gray, ok := c.(GrayM); ok && gray.M == model.M {
+		return c
+	}
+	r, g, b, _ := c.RGBA()
+	m := uint32(model.M)
+	y := (299*r + 587*g + 114*b + 500) / 1000
+	return GrayM{Y: uint8((y * m) >> 8), M: uint8(m)}
+}
+
+// GrayM32 represents a 16-bit grayscale value and the value to represent 100%
+// white.  Because GrayM16 does not support alpha channels it does make sense
+// to describe it as either "alpha-premultiplied" or "non-alpha-premultiplied".
+type GrayM32 struct {
+	Y, M uint16
+}
+
+// RGBA converts a GrayM32 to alpha-premultiplied R, G, B, and A.
+func (c GrayM32) RGBA() (r, g, b, a uint32) {
+	m := uint32(c.M)
+	y := (uint32(c.Y) * 0xffff) / m
+	return y, y, y, 0xffff
+}
+
+// A GrayM32Model represents the maximum value of a GrayM32 (0-65535).
+type GrayM32Model struct {
+	M uint16 // Maximum value of the luminance channel
+}
+
+// Convert converts an arbitrary color to a GrayM32.
+func (model GrayM32Model) Convert(c color.Color) color.Color {
+	if gray, ok := c.(GrayM32); ok && gray.M == model.M {
+		return c
+	}
+	r, g, b, _ := c.RGBA()
+	m := uint32(model.M)
+	y := (299*r + 587*g + 114*b + 500) / 1000
+	return GrayM32{Y: uint16((y * m) >> 8), M: uint16(m)}
+}
+
 // RGBM represents a 24-bit color and the value used for 100% of a color
 // channel.  Because RGBM does not support alpha channels it does make sense to
 // describe it as either "alpha-premultiplied" or "non-alpha-premultiplied".
