@@ -122,7 +122,7 @@ func (p *RGBM) Opaque() bool {
 func NewRGBM(r image.Rectangle, m uint8) *RGBM {
 	w, h := r.Dx(), r.Dy()
 	pix := make([]uint8, 4*w*h)
-	model := npcolor.NewRGBMModel(m)
+	model := npcolor.RGBMModel{m}
 	return &RGBM{pix, 4 * w, r, model}
 }
 
@@ -252,7 +252,7 @@ func (p *RGBM64) Opaque() bool {
 func NewRGBM64(r image.Rectangle, m uint16) *RGBM64 {
 	w, h := r.Dx(), r.Dy()
 	pix := make([]uint8, 8*w*h)
-	model := npcolor.NewRGBM64Model(m)
+	model := npcolor.RGBM64Model{m}
 	return &RGBM64{pix, 8 * w, r, model}
 }
 
@@ -277,18 +277,15 @@ func decodeConfigPPM(r io.Reader) (image.Config, error) {
 		return image.Config{}, err
 	}
 
-	// Define the color model using the color channel's maximum value.
-	if header.Maxval < 256 {
-		header.Model = npcolor.NewRGBMModel(uint8(header.Maxval))
-	} else {
-		header.Model = npcolor.NewRGBM64Model(uint16(header.Maxval))
-	}
-
 	// Store and return the image configuration.
 	var cfg image.Config
 	cfg.Width = header.Width
 	cfg.Height = header.Height
-	cfg.ColorModel = header
+	if header.Maxval < 256 {
+		cfg.ColorModel = npcolor.RGBMModel{uint8(header.Maxval)}
+	} else {
+		cfg.ColorModel = npcolor.RGBM64Model{uint16(header.Maxval)}
+	}
 	return cfg, nil
 }
 
@@ -305,18 +302,23 @@ func decodePPM(r io.Reader) (image.Image, error) {
 	var img image.Image // Image to return
 	var data []uint8    // RGBA image data
 	var rgbData []uint8 // RGB file data
+	var maxVal uint     // 100% white value
 	nPixels := config.Width * config.Height
-	maxVal := config.ColorModel.(netpbmHeader).Maxval // 100% white value
-	if maxVal < 256 {
+	switch model := config.ColorModel.(type) {
+	case npcolor.RGBMModel:
+		maxVal = uint(model.M)
 		rgb := NewRGBM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
 		data = rgb.Pix
 		rgbData = make([]uint8, nPixels*3)
 		img = rgb
-	} else {
+	case npcolor.RGBM64Model:
+		maxVal = uint(model.M)
 		rgb := NewRGBM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
 		data = rgb.Pix
 		rgbData = make([]uint8, nPixels*3*2)
 		img = rgb
+	default:
+		panic("Unexpected color model")
 	}
 
 	// Read RGB (no A) data into a holding buffer.
@@ -373,16 +375,21 @@ func decodePPMPlain(r io.Reader) (image.Image, error) {
 	}
 
 	// Create either a Color or a Color64 image.
-	var data []uint8                                  // Image data
-	maxVal := config.ColorModel.(netpbmHeader).Maxval // 100% white value
-	if maxVal < 256 {
+	var data []uint8 // Image data
+	var maxVal int   // 100% white value
+	switch model := config.ColorModel.(type) {
+	case npcolor.RGBMModel:
+		maxVal = int(model.M)
 		rgb := NewRGBM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
 		data = rgb.Pix
 		img = rgb
-	} else {
+	case npcolor.RGBM64Model:
+		maxVal = int(model.M)
 		rgb := NewRGBM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
 		data = rgb.Pix
 		img = rgb
+	default:
+		panic("Unexpected color model")
 	}
 
 	// Read ASCII base-10 integers until no more remain.

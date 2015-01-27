@@ -22,13 +22,13 @@ func (c RGBM) RGBA() (r, g, b, a uint32) {
 	return
 }
 
-// An rgbmModel represents the maximum value of an RGBM (0-255).
-type rgbmModel struct {
+// An RGBMModel represents the maximum value of an RGBM (0-255).
+type RGBMModel struct {
 	M uint8 // Maximum value of each color channel
 }
 
 // Convert converts an arbitrary color to an RGBM.
-func (model rgbmModel) Convert(c color.Color) color.Color {
+func (model RGBMModel) Convert(c color.Color) color.Color {
 	if _, ok := c.(RGBM); ok {
 		return c
 	}
@@ -38,12 +38,6 @@ func (model rgbmModel) Convert(c color.Color) color.Color {
 	g = (g * m) / 0xffff
 	b = (b * m) / 0xffff
 	return RGBM{R: uint8(r), G: uint8(g), B: uint8(b), M: uint8(m)}
-}
-
-// Given a maximum channel value, NewRGBMModel returns a color model that can
-// convert any color to an RGBM with that maximum channel value.
-func NewRGBMModel(m uint8) color.Model {
-	return rgbmModel{m}
 }
 
 // RGBM64 represents a 48-bit color and the value used for 100% of a color
@@ -63,13 +57,13 @@ func (c RGBM64) RGBA() (r, g, b, a uint32) {
 	return
 }
 
-// An rgbm64Model represents the maximum value of an RGBM64 (0-65535).
-type rgbm64Model struct {
+// An RGBM64Model represents the maximum value of an RGBM64 (0-65535).
+type RGBM64Model struct {
 	M uint16 // Maximum value of each color channel
 }
 
 // Convert converts an arbitrary color to an RGBM64.
-func (model rgbm64Model) Convert(c color.Color) color.Color {
+func (model RGBM64Model) Convert(c color.Color) color.Color {
 	if _, ok := c.(RGBM64); ok {
 		return c
 	}
@@ -79,10 +73,4 @@ func (model rgbm64Model) Convert(c color.Color) color.Color {
 	g = (g * m) / 0xffff
 	b = (b * m) / 0xffff
 	return RGBM64{R: uint16(r), G: uint16(g), B: uint16(b), M: uint16(m)}
-}
-
-// Given a maximum channel value, NewRGBM64Model returns a color model that can
-// convert any color to an RGBM64 with that maximum channel value.
-func NewRGBM64Model(m uint16) color.Model {
-	return rgbm64Model{m}
 }
