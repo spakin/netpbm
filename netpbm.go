@@ -10,7 +10,11 @@ package netpbm
 
 import (
 	"bufio"
+	"image"
+	"io"
 	"unicode"
+	"errors"
+	"fmt"
 )
 
 // A netpbmReader extends bufio.Reader with the ability to read bytes
@@ -123,4 +127,86 @@ func (nr *netpbmReader) GetNetpbmHeader() (netpbmHeader, bool) {
 
 	// Return the header and a success code.
 	return header, true
+}
+
+// A Format represents a specific Netpbm format.
+type Format int
+
+// Define a symbol for each supported Netpbm format.
+const (
+	PBM Format = 1 << iota
+	PGM
+	PPM
+)
+
+// DecodeOptions represents a list of options for decoding a Netpbm file.
+type DecodeOptions struct {
+	Allowed Format // Bit mask of Netpbm formats allowed (0 = all)
+}
+
+// Decode reads a Netpbm image from r and returns it as an image.Image.
+func Decode(r io.Reader, opt *DecodeOptions) (image.Image, error) {
+	// Determine the set of all formats allowed.
+	var allowed Format
+	if opt == nil || opt.Allowed == 0 {
+		allowed = PBM | PGM | PPM
+	} else {
+		allowed = opt.Allowed
+	}
+
+	// Peek at the file's magic number.
+	rr, ok := r.(*bufio.Reader)
+	if !ok {
+		rr = bufio.NewReader(r)
+	}
+	magic, err := rr.Peek(2)
+	if err != nil {
+		return nil, err
+	}
+
+	// Invoke the decode function corresponding to the magic number.
+	if magic[0] != 'P' {
+		return nil, errors.New("Not a Netpbm image")
+	}
+	switch magic[1] {
+	case '1':
+		// Plain PBM
+		if allowed & PBM != PBM {
+			return nil, errors.New("PBM rejected by Decode options")
+		}
+		return decodePBMPlain(rr)
+	case '2':
+		// Plain PGM
+		if allowed & PGM != PGM {
+			return nil, errors.New("PGM rejected by Decode options")
+		}
+		return decodePGMPlain(rr)
+	case '3':
+		// Plain PPM
+		if allowed & PPM != PPM {
+			return nil, errors.New("PPM rejected by Decode options")
+		}
+		return decodePPMPlain(rr)
+	case '4':
+		// Raw PBM
+		if allowed & PBM != PBM {
+			return nil, errors.New("PBM rejected by Decode options")
+		}
+		return decodePBM(rr)
+	case '5':
+		// Raw PGM
+		if allowed & PGM != PGM {
+			return nil, errors.New("PGM rejected by Decode options")
+		}
+		return decodePGM(rr)
+	case '6':
+		// Raw PPM
+		if allowed & PPM != PPM {
+			return nil, errors.New("PPM rejected by Decode options")
+		}
+		return decodePPM(rr)
+	default:
+		// None of the above
+		return nil, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
+	}
 }
