@@ -15,6 +15,11 @@ import (
 // A BW is simply an alias for an image.Paletted.
 type BW struct{ *image.Paletted }
 
+// MaxValue returns the maximum index value allowed.
+func (p *BW) MaxValue() uint16 {
+	return 1
+}
+
 // NewBW returns a new black-and-white image with the given bounds and
 // maximum value.
 func NewBW(r image.Rectangle) *BW {

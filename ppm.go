@@ -107,6 +107,11 @@ func (p *RGBM) Opaque() bool {
 	return true
 }
 
+// MaxValue returns the maximum value allowed on any color channel.
+func (p *RGBM) MaxValue() uint16 {
+	return uint16(p.Model.M)
+}
+
 // NewRGBM returns a new RGBM with the given bounds and maximum channel value.
 func NewRGBM(r image.Rectangle, m uint8) *RGBM {
 	w, h := r.Dx(), r.Dy()
@@ -221,6 +226,11 @@ func (p *RGBM64) SubImage(r image.Rectangle) image.Image {
 // Opaque scans the entire image and reports whether it is fully opaque.
 func (p *RGBM64) Opaque() bool {
 	return true
+}
+
+// MaxValue returns the maximum value allowed on any color channel.
+func (p *RGBM64) MaxValue() uint16 {
+	return uint16(p.Model.M)
 }
 
 // NewRGBM64 returns a new RGBM64 with the given bounds and maximum channel

@@ -101,6 +101,11 @@ func (p *GrayM) Opaque() bool {
 	return true
 }
 
+// MaxValue returns the maximum grayscale value allowed.
+func (p *GrayM) MaxValue() uint16 {
+	return uint16(p.Model.M)
+}
+
 // NewGrayM returns a new GrayM with the given bounds and maximum channel
 // value.
 func NewGrayM(r image.Rectangle, m uint8) *GrayM {
@@ -149,7 +154,7 @@ func (p *GrayM32) GrayM32At(x, y int) npcolor.GrayM32 {
 // PixOffset returns the index of the first element of Pix that corresponds to
 // the pixel at (x, y).
 func (p *GrayM32) PixOffset(x, y int) int {
-	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*1
+	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*2
 }
 
 // Set sets the pixel at (x, y) to a given color, expressed as a color.Color.
@@ -203,13 +208,18 @@ func (p *GrayM32) Opaque() bool {
 	return true
 }
 
+// MaxValue returns the maximum grayscale value allowed.
+func (p *GrayM32) MaxValue() uint16 {
+	return uint16(p.Model.M)
+}
+
 // NewGrayM32 returns a new GrayM32 with the given bounds and maximum channel
 // value.
 func NewGrayM32(r image.Rectangle, m uint16) *GrayM32 {
 	w, h := r.Dx(), r.Dy()
-	pix := make([]uint8, 1*w*h)
+	pix := make([]uint8, 2*w*h)
 	model := npcolor.GrayM32Model{m}
-	return &GrayM32{pix, 1 * w, r, model}
+	return &GrayM32{pix, 2 * w, r, model}
 }
 
 // decodeConfigPGM reads and parses a PGM header, either "raw" (binary) or
@@ -265,6 +275,7 @@ func decodePGM(r io.Reader) (image.Image, error) {
 		data = gray.Pix
 		img = gray
 	case npcolor.GrayM32Model:
+		maxVal = uint(model.M)
 		gray := NewGrayM32(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
 		data = gray.Pix
 		img = gray
@@ -319,6 +330,7 @@ func decodePGMPlain(r io.Reader) (image.Image, error) {
 		data = gray.Pix
 		img = gray
 	case npcolor.GrayM32Model:
+		maxVal = int(model.M)
 		gray := NewGrayM32(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
 		data = gray.Pix
 		img = gray

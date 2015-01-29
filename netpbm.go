@@ -10,11 +10,11 @@ package netpbm
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"image"
 	"io"
 	"unicode"
-	"errors"
-	"fmt"
 )
 
 // A netpbmReader extends bufio.Reader with the ability to read bytes
@@ -129,6 +129,12 @@ func (nr *netpbmReader) GetNetpbmHeader() (netpbmHeader, bool) {
 	return header, true
 }
 
+// An Image extends image.Image to include a MaxValue method.
+type Image interface {
+	image.Image
+	MaxValue() uint16
+}
+
 // A Format represents a specific Netpbm format.
 type Format int
 
@@ -144,8 +150,8 @@ type DecodeOptions struct {
 	Allowed Format // Bit mask of Netpbm formats allowed (0 = all)
 }
 
-// Decode reads a Netpbm image from r and returns it as an image.Image.
-func Decode(r io.Reader, opt *DecodeOptions) (image.Image, error) {
+// Decode reads a Netpbm image from r and returns it as an Image.
+func Decode(r io.Reader, opt *DecodeOptions) (Image, error) {
 	// Determine the set of all formats allowed.
 	var allowed Format
 	if opt == nil || opt.Allowed == 0 {
@@ -168,45 +174,47 @@ func Decode(r io.Reader, opt *DecodeOptions) (image.Image, error) {
 	if magic[0] != 'P' {
 		return nil, errors.New("Not a Netpbm image")
 	}
+	var img image.Image // Image to return
 	switch magic[1] {
 	case '1':
 		// Plain PBM
-		if allowed & PBM != PBM {
+		if allowed&PBM != PBM {
 			return nil, errors.New("PBM rejected by Decode options")
 		}
-		return decodePBMPlain(rr)
+		img, err = decodePBMPlain(rr)
 	case '2':
 		// Plain PGM
-		if allowed & PGM != PGM {
+		if allowed&PGM != PGM {
 			return nil, errors.New("PGM rejected by Decode options")
 		}
-		return decodePGMPlain(rr)
+		img, err = decodePGMPlain(rr)
 	case '3':
 		// Plain PPM
-		if allowed & PPM != PPM {
+		if allowed&PPM != PPM {
 			return nil, errors.New("PPM rejected by Decode options")
 		}
-		return decodePPMPlain(rr)
+		img, err = decodePPMPlain(rr)
 	case '4':
 		// Raw PBM
-		if allowed & PBM != PBM {
+		if allowed&PBM != PBM {
 			return nil, errors.New("PBM rejected by Decode options")
 		}
-		return decodePBM(rr)
+		img, err = decodePBM(rr)
 	case '5':
 		// Raw PGM
-		if allowed & PGM != PGM {
+		if allowed&PGM != PGM {
 			return nil, errors.New("PGM rejected by Decode options")
 		}
-		return decodePGM(rr)
+		img, err = decodePGM(rr)
 	case '6':
 		// Raw PPM
-		if allowed & PPM != PPM {
+		if allowed&PPM != PPM {
 			return nil, errors.New("PPM rejected by Decode options")
 		}
-		return decodePPM(rr)
+		img, err = decodePPM(rr)
 	default:
 		// None of the above
 		return nil, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
 	}
+	return img.(Image), err
 }
