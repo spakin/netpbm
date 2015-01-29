@@ -150,6 +150,38 @@ type DecodeOptions struct {
 	Allowed Format // Bit mask of Netpbm formats allowed (0 = all)
 }
 
+// DecodeConfig returns image metadata without decoding the entire image.
+func DecodeConfig(r io.Reader) (image.Config, error) {
+	// Peek at the file's magic number.
+	rr, ok := r.(*bufio.Reader)
+	if !ok {
+		rr = bufio.NewReader(r)
+	}
+	magic, err := rr.Peek(2)
+	if err != nil {
+		return image.Config{}, err
+	}
+
+	// Invoke the decode function corresponding to the magic number.
+	if magic[0] != 'P' {
+		return image.Config{}, errors.New("Not a Netpbm image")
+	}
+	switch magic[1] {
+	case '1', '4':
+		// PBM
+		return decodeConfigPBM(rr)
+	case '2', '5':
+		// PGM
+		return decodeConfigPGM(rr)
+	case '3', '6':
+		// PPM
+		return decodeConfigPPM(rr)
+	default:
+		// None of the above
+		return image.Config{}, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
+	}
+}
+
 // Decode reads a Netpbm image from r and returns it as an Image.
 func Decode(r io.Reader, opt *DecodeOptions) (Image, error) {
 	// Determine the set of all formats allowed.
