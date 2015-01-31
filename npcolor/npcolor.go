@@ -32,7 +32,8 @@ func (model GrayMModel) Convert(c color.Color) color.Color {
 	r, g, b, _ := c.RGBA()
 	m := uint32(model.M)
 	y := (299*r + 587*g + 114*b + 500) / 1000
-	return GrayM{Y: uint8((y * m) >> 8), M: uint8(m)}
+	y = (y * m) / 0xffff
+	return GrayM{Y: uint8(y), M: uint8(m)}
 }
 
 // GrayM32 represents a 16-bit grayscale value and the value to represent 100%
@@ -62,7 +63,8 @@ func (model GrayM32Model) Convert(c color.Color) color.Color {
 	r, g, b, _ := c.RGBA()
 	m := uint32(model.M)
 	y := (299*r + 587*g + 114*b + 500) / 1000
-	return GrayM32{Y: uint16((y * m) >> 8), M: uint16(m)}
+	y = (y * m) / 0xffff
+	return GrayM32{Y: uint16(y), M: uint16(m)}
 }
 
 // RGBM represents a 24-bit color and the value used for 100% of a color

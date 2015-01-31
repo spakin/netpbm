@@ -6,9 +6,11 @@ package netpbm
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"io"
+	"strings"
 	"unicode"
 )
 
@@ -149,4 +151,100 @@ func decodePBMPlain(r io.Reader) (image.Image, error) {
 func init() {
 	image.RegisterFormat("pbm", "P4", decodePBM, decodeConfigPBM)
 	image.RegisterFormat("pbm", "P1", decodePBMPlain, decodeConfigPBM)
+}
+
+// encodePBM writes an arbitrary image in PBM format.
+func encodePBM(w io.Writer, img image.Image, opts *EncodeOptions) error {
+	// Write the PBM header.
+	if opts.Plain {
+		fmt.Fprintln(w, "P1")
+	} else {
+		fmt.Fprintln(w, "P4")
+	}
+	if opts.Comment != "" {
+		fmt.Fprintf(w, "# %s\n", strings.Replace(opts.Comment, "\n", "# ", -1))
+	}
+	rect := img.Bounds()
+	width := rect.Max.X - rect.Min.X
+	height := rect.Max.Y - rect.Min.Y
+	fmt.Fprintf(w, "%d %d\n", width, height)
+
+	// Write the PBM data.
+	return encodeBWData(w, img, opts)
+}
+
+// encodeBWData writes image data as 1-bit samples.
+func encodeBWData(w io.Writer, img image.Image, opts *EncodeOptions) error {
+	// Spawn a goroutine to write each index value into a channel.
+	rect := img.Bounds()
+	width := rect.Max.X - rect.Min.X
+	samples := make(chan uint8, width)
+	go func() {
+		bwImage := NewBW(image.ZR)
+		cm := bwImage.ColorModel().(color.Palette)
+		for y := rect.Min.Y; y < rect.Max.Y; y++ {
+			for x := rect.Min.X; x < rect.Max.X; x++ {
+				samples <- uint8(cm.Index(img.At(x, y)))
+			}
+		}
+		close(samples)
+	}()
+
+	// Consume index values (either 0 or 1) and write them to the
+	// image file as individual bits.
+	if opts.Plain {
+		// Plain -- output lines of up to 70 characters.
+		var line string
+		for s := range samples {
+			word := fmt.Sprintf("%d ", s)
+			if len(line)+len(word) <= 70 {
+				line += word
+			} else {
+				lineBytes := []byte(line)
+				lineBytes[len(lineBytes)-1] = '\n'
+				_, err := w.Write(lineBytes)
+				if err != nil {
+					return err
+				}
+				line = word
+			}
+
+		}
+		if line != "" {
+			lineBytes := []byte(line)
+			lineBytes[len(lineBytes)-1] = '\n'
+			_, err := w.Write(lineBytes)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		// Raw -- pack 8 bits to a byte, pad each row, and output.
+		wb, ok := w.(*bufio.Writer)
+		if !ok {
+			wb = bufio.NewWriter(w)
+		}
+		var b byte      // Next byte to write
+		var bLen uint   // Valid bits in b
+		var rowBits int // Bits written to the current row
+		for s := range samples {
+			b = b<<1 | s
+			bLen++
+			rowBits++
+			if rowBits == width {
+				// Pad the last byte in the row.
+				b <<= 8 - bLen
+				bLen = 8
+				rowBits = 0
+			}
+			if bLen == 8 {
+				// Write a full byte to the output.
+				wb.WriteByte(b)
+				b = 0
+				bLen = 0
+			}
+		}
+		wb.Flush()
+	}
+	return nil
 }

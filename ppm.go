@@ -6,10 +6,13 @@ package netpbm
 import (
 	"bufio"
 	"errors"
-	"github.com/spakin/netpbm/npcolor"
+	"fmt"
 	"image"
 	"image/color"
 	"io"
+	"strings"
+
+	"github.com/spakin/netpbm/npcolor"
 )
 
 // An RGBM is an in-memory image whose At method returns npcolor.RGBM values.
@@ -392,4 +395,142 @@ func decodePPMPlain(r io.Reader) (image.Image, error) {
 func init() {
 	image.RegisterFormat("ppm", "P6", decodePPM, decodeConfigPPM)
 	image.RegisterFormat("ppm", "P3", decodePPMPlain, decodeConfigPPM)
+}
+
+// encodePPM writes an arbitrary image in PPM format.
+func encodePPM(w io.Writer, img image.Image, opts *EncodeOptions) error {
+	// Write the PPM header.
+	if opts.Plain {
+		fmt.Fprintln(w, "P3")
+	} else {
+		fmt.Fprintln(w, "P6")
+	}
+	if opts.Comment != "" {
+		fmt.Fprintf(w, "# %s\n", strings.Replace(opts.Comment, "\n", "# ", -1))
+	}
+	rect := img.Bounds()
+	width := rect.Max.X - rect.Min.X
+	height := rect.Max.Y - rect.Min.Y
+	fmt.Fprintf(w, "%d %d\n", width, height)
+	fmt.Fprintf(w, "%d\n", opts.MaxValue)
+
+	// Write the PPM data.
+	if opts.MaxValue < 256 {
+		return encodeRGBData(w, img, opts)
+	} else {
+		return encodeRGB64Data(w, img, opts)
+	}
+}
+
+// encodeRGBData writes image data as 8-bit samples.
+func encodeRGBData(w io.Writer, img image.Image, opts *EncodeOptions) error {
+	// Spawn a goroutine to write each 8-bit color sample into a channel.
+	rect := img.Bounds()
+	width := rect.Max.X - rect.Min.X
+	samples := make(chan uint8, width*3)
+	go func() {
+		cm := npcolor.RGBMModel{uint8(opts.MaxValue)}
+		for y := rect.Min.Y; y < rect.Max.Y; y++ {
+			for x := rect.Min.X; x < rect.Max.X; x++ {
+				c := cm.Convert(img.At(x, y)).(npcolor.RGBM)
+				samples <- c.R
+				samples <- c.G
+				samples <- c.B
+			}
+		}
+		close(samples)
+	}()
+
+	// Consume 8-bit color samples and write them to the image file.
+	if opts.Plain {
+		// Plain -- output lines of up to 70 characters.
+		var line string
+		for s := range samples {
+			word := fmt.Sprintf("%d ", s)
+			if len(line)+len(word) <= 70 {
+				line += word
+			} else {
+				_, err := io.WriteString(w, line[:len(line)-1])
+				if err != nil {
+					return err
+				}
+				line = word
+			}
+
+		}
+		if line != "" {
+			_, err := io.WriteString(w, line[:len(line)-1])
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		// Raw -- output raw bytes.
+		wb, ok := w.(*bufio.Writer)
+		if !ok {
+			wb = bufio.NewWriter(w)
+		}
+		for s := range samples {
+			wb.WriteByte(s)
+		}
+		wb.Flush()
+	}
+	return nil
+}
+
+// encodeRGB64Data writes image data as 16-bit samples.
+func encodeRGB64Data(w io.Writer, img image.Image, opts *EncodeOptions) error {
+	// Spawn a goroutine to write each 16-bit color sample into a channel.
+	rect := img.Bounds()
+	width := rect.Max.X - rect.Min.X
+	samples := make(chan uint16, width*3)
+	go func() {
+		cm := npcolor.RGBM64Model{opts.MaxValue}
+		for y := rect.Min.Y; y < rect.Max.Y; y++ {
+			for x := rect.Min.X; x < rect.Max.X; x++ {
+				c := cm.Convert(img.At(x, y)).(npcolor.RGBM64)
+				samples <- c.R
+				samples <- c.G
+				samples <- c.B
+			}
+		}
+		close(samples)
+	}()
+
+	// Consume 16-bit color samples and write them to the image file.
+	if opts.Plain {
+		// Plain -- output lines of up to 70 characters.
+		var line string
+		for s := range samples {
+			word := fmt.Sprintf("%d ", s)
+			if len(line)+len(word) <= 70 {
+				line += word
+			} else {
+				_, err := io.WriteString(w, line[:len(line)-1])
+				if err != nil {
+					return err
+				}
+				line = word
+			}
+
+		}
+		if line != "" {
+			_, err := io.WriteString(w, line[:len(line)-1])
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		// Raw -- output raw bytes.
+		wb, ok := w.(*bufio.Writer)
+		if !ok {
+			wb = bufio.NewWriter(w)
+		}
+		for s := range samples {
+			wb.WriteByte(uint8(s >> 8))
+			wb.WriteByte(uint8(s))
+		}
+		wb.Flush()
+	}
+	return nil
 }

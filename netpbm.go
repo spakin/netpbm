@@ -250,3 +250,39 @@ func Decode(r io.Reader, opt *DecodeOptions) (Image, error) {
 	}
 	return img.(Image), err
 }
+
+// EncodeOptions represents a list of options for writing a Netpbm file.
+type EncodeOptions struct {
+	Format   Format // Netpbm format
+	MaxValue uint16 // Maximum value for each color channel
+	Plain    bool   // true="plain" (ASCII); false="raw" (binary)
+	Comment  string // Header comment
+}
+
+// Encode writes an arbitrary image in any of the Netpbm formats.
+func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
+	var o EncodeOptions
+	if opts == nil {
+		// Select some reasonable default options.
+		o = EncodeOptions{
+			Format:   PPM,
+			MaxValue: 255,
+		}
+	} else {
+		// Ensure the provided options are sensible.
+		o = *opts
+		if o.MaxValue == 0 {
+			return errors.New("MaxValue must be greater than 0")
+		}
+	}
+	switch o.Format {
+	case PPM:
+		return encodePPM(w, img, &o)
+	case PGM:
+		return encodePGM(w, img, &o)
+	case PBM:
+		return encodePBM(w, img, &o)
+	default:
+		return errors.New("Invalid Netpbm format specified")
+	}
+}
