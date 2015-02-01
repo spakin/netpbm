@@ -175,51 +175,27 @@ func encodePBM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 
 // encodeBWData writes image data as 1-bit samples.
 func encodeBWData(w io.Writer, img image.Image, opts *EncodeOptions) error {
-	// Spawn a goroutine to write each index value into a channel.
+	// In the background, write each index value into a channel.
 	rect := img.Bounds()
 	width := rect.Max.X - rect.Min.X
-	samples := make(chan uint8, width)
+	samples := make(chan uint16, width)
 	go func() {
 		bwImage := NewBW(image.ZR)
 		cm := bwImage.ColorModel().(color.Palette)
 		for y := rect.Min.Y; y < rect.Max.Y; y++ {
 			for x := rect.Min.X; x < rect.Max.X; x++ {
-				samples <- uint8(cm.Index(img.At(x, y)))
+				samples <- uint16(cm.Index(img.At(x, y)))
 			}
 		}
 		close(samples)
 	}()
 
-	// Consume index values (either 0 or 1) and write them to the
-	// image file as individual bits.
+	// In the foreground, consume index values (either 0 or 1) and write
+	// them to the image file as individual bits.
 	if opts.Plain {
-		// Plain -- output lines of up to 70 characters.
-		var line string
-		for s := range samples {
-			word := fmt.Sprintf("%d ", s)
-			if len(line)+len(word) <= 70 {
-				line += word
-			} else {
-				lineBytes := []byte(line)
-				lineBytes[len(lineBytes)-1] = '\n'
-				_, err := w.Write(lineBytes)
-				if err != nil {
-					return err
-				}
-				line = word
-			}
-
-		}
-		if line != "" {
-			lineBytes := []byte(line)
-			lineBytes[len(lineBytes)-1] = '\n'
-			_, err := w.Write(lineBytes)
-			if err != nil {
-				return err
-			}
-		}
+		return writePlainData(w, samples)
 	} else {
-		// Raw -- pack 8 bits to a byte, pad each row, and output.
+		// Pack 8 bits to a byte, pad each row, and output.
 		wb, ok := w.(*bufio.Writer)
 		if !ok {
 			wb = bufio.NewWriter(w)
@@ -228,7 +204,7 @@ func encodeBWData(w io.Writer, img image.Image, opts *EncodeOptions) error {
 		var bLen uint   // Valid bits in b
 		var rowBits int // Bits written to the current row
 		for s := range samples {
-			b = b<<1 | s
+			b = b<<1 | byte(s)
 			bLen++
 			rowBits++
 			if rowBits == width {
@@ -239,7 +215,9 @@ func encodeBWData(w io.Writer, img image.Image, opts *EncodeOptions) error {
 			}
 			if bLen == 8 {
 				// Write a full byte to the output.
-				wb.WriteByte(b)
+				if err := wb.WriteByte(b); err != nil {
+					return err
+				}
 				b = 0
 				bLen = 0
 			}

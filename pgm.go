@@ -404,65 +404,33 @@ func encodePGM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 
 // encodeGrayData writes image data as 8-bit samples.
 func encodeGrayData(w io.Writer, img image.Image, opts *EncodeOptions) error {
-	// Spawn a goroutine to write each 8-bit color sample into a channel.
+	// In the background, write each 8-bit color sample into a channel.
 	rect := img.Bounds()
 	width := rect.Max.X - rect.Min.X
-	samples := make(chan uint8, width)
+	samples := make(chan uint16, width)
 	go func() {
 		cm := npcolor.GrayMModel{uint8(opts.MaxValue)}
 		for y := rect.Min.Y; y < rect.Max.Y; y++ {
 			for x := rect.Min.X; x < rect.Max.X; x++ {
 				c := cm.Convert(img.At(x, y)).(npcolor.GrayM)
-				samples <- c.Y
+				samples <- uint16(c.Y)
 			}
 		}
 		close(samples)
 	}()
 
-	// Consume 8-bit color samples and write them to the image file.
+	// In the foreground, consume grayscale samples and write them to the
+	// image file.
 	if opts.Plain {
-		// Plain -- output lines of up to 70 characters.
-		var line string
-		for s := range samples {
-			word := fmt.Sprintf("%d ", s)
-			if len(line)+len(word) <= 70 {
-				line += word
-			} else {
-				lineBytes := []byte(line)
-				lineBytes[len(lineBytes)-1] = '\n'
-				_, err := w.Write(lineBytes)
-				if err != nil {
-					return err
-				}
-				line = word
-			}
-
-		}
-		if line != "" {
-			lineBytes := []byte(line)
-			lineBytes[len(lineBytes)-1] = '\n'
-			_, err := w.Write(lineBytes)
-			if err != nil {
-				return err
-			}
-		}
+		return writePlainData(w, samples)
 	} else {
-		// Raw -- output raw bytes.
-		wb, ok := w.(*bufio.Writer)
-		if !ok {
-			wb = bufio.NewWriter(w)
-		}
-		for s := range samples {
-			wb.WriteByte(s)
-		}
-		wb.Flush()
+		return writeRawData(w, samples, 1)
 	}
-	return nil
 }
 
 // encodeGray32Data writes image data as 16-bit samples.
 func encodeGray32Data(w io.Writer, img image.Image, opts *EncodeOptions) error {
-	// Spawn a goroutine to write each 16-bit color sample into a channel.
+	// In the background, write each 16-bit color sample into a channel.
 	rect := img.Bounds()
 	width := rect.Max.X - rect.Min.X
 	samples := make(chan uint16, width)
@@ -477,40 +445,11 @@ func encodeGray32Data(w io.Writer, img image.Image, opts *EncodeOptions) error {
 		close(samples)
 	}()
 
-	// Consume 16-bit color samples and write them to the image file.
+	// In the foreground, consume grayscale samples and write them to the
+	// image file.
 	if opts.Plain {
-		// Plain -- output lines of up to 70 characters.
-		var line string
-		for s := range samples {
-			word := fmt.Sprintf("%d ", s)
-			if len(line)+len(word) <= 70 {
-				line += word
-			} else {
-				_, err := io.WriteString(w, line[:len(line)-1])
-				if err != nil {
-					return err
-				}
-				line = word
-			}
-
-		}
-		if line != "" {
-			_, err := io.WriteString(w, line[:len(line)-1])
-			if err != nil {
-				return err
-			}
-		}
+		return writePlainData(w, samples)
 	} else {
-		// Raw -- output raw bytes.
-		wb, ok := w.(*bufio.Writer)
-		if !ok {
-			wb = bufio.NewWriter(w)
-		}
-		for s := range samples {
-			wb.WriteByte(uint8(s >> 8))
-			wb.WriteByte(uint8(s))
-		}
-		wb.Flush()
+		return writeRawData(w, samples, 2)
 	}
-	return nil
 }

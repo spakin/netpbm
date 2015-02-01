@@ -286,3 +286,67 @@ func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 		return errors.New("Invalid Netpbm format specified")
 	}
 }
+
+// writePlainData writes numbers read from a channel as base-10 strings, 70
+// characters per line.
+func writePlainData(w io.Writer, ch chan uint16) error {
+	var line string
+	for s := range ch {
+		word := fmt.Sprintf("%d ", s)
+		if len(line)+len(word) <= 70 {
+			line += word
+		} else {
+			lineBytes := []byte(line)
+			lineBytes[len(lineBytes)-1] = '\n'
+			_, err := w.Write(lineBytes)
+			if err != nil {
+				return err
+			}
+			line = word
+		}
+
+	}
+	if line != "" {
+		lineBytes := []byte(line)
+		lineBytes[len(lineBytes)-1] = '\n'
+		_, err := w.Write(lineBytes)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// writeRawData writes numbers read from a channel as bytes, either uint8s (if
+// wd = 1) or uint16s (if wd = 2).
+func writeRawData(w io.Writer, ch chan uint16, wd int) error {
+	var err error
+	wb, ok := w.(*bufio.Writer)
+	if !ok {
+		wb = bufio.NewWriter(w)
+	}
+	switch wd {
+	case 1:
+		for s := range ch {
+			err = wb.WriteByte(uint8(s))
+			if err != nil {
+				return err
+			}
+		}
+	case 2:
+		for s := range ch {
+			err = wb.WriteByte(uint8(s >> 8))
+			if err != nil {
+				return err
+			}
+			err = wb.WriteByte(uint8(s))
+			if err != nil {
+				return err
+			}
+		}
+	default:
+		panic("writeRawData was given an invalid byte width")
+	}
+	wb.Flush()
+	return nil
+}
