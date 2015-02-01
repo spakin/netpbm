@@ -15,7 +15,7 @@ type GrayM struct {
 // RGBA converts a GrayM to alpha-premultiplied R, G, B, and A.
 func (c GrayM) RGBA() (r, g, b, a uint32) {
 	m := uint32(c.M)
-	y := (uint32(c.Y) * 0xffff) / m
+	y := (uint32(c.Y)*0xffff + m/2) / m
 	return y, y, y, 0xffff
 }
 
@@ -30,9 +30,9 @@ func (model GrayMModel) Convert(c color.Color) color.Color {
 		return c
 	}
 	r, g, b, _ := c.RGBA()
-	m := uint32(model.M)
 	y := (299*r + 587*g + 114*b + 500) / 1000
-	y = (y * m) / 0xffff
+	m := uint32(model.M)
+	y = (y*m + 0xffff/2) / 0xffff
 	return GrayM{Y: uint8(y), M: uint8(m)}
 }
 
@@ -46,7 +46,7 @@ type GrayM32 struct {
 // RGBA converts a GrayM32 to alpha-premultiplied R, G, B, and A.
 func (c GrayM32) RGBA() (r, g, b, a uint32) {
 	m := uint32(c.M)
-	y := (uint32(c.Y) * 0xffff) / m
+	y := (uint32(c.Y)*0xffff + m/2) / m
 	return y, y, y, 0xffff
 }
 
@@ -61,9 +61,9 @@ func (model GrayM32Model) Convert(c color.Color) color.Color {
 		return c
 	}
 	r, g, b, _ := c.RGBA()
-	m := uint32(model.M)
 	y := (299*r + 587*g + 114*b + 500) / 1000
-	y = (y * m) / 0xffff
+	m := uint32(model.M)
+	y = (y*m + 0xffff/2) / 0xffff
 	return GrayM32{Y: uint16(y), M: uint16(m)}
 }
 
@@ -77,9 +77,9 @@ type RGBM struct {
 // RGBA converts an RGBM to alpha-premultiplied R, G, B, and A.
 func (c RGBM) RGBA() (r, g, b, a uint32) {
 	m := uint32(c.M)
-	r = (uint32(c.R) * 0xffff) / m
-	g = (uint32(c.G) * 0xffff) / m
-	b = (uint32(c.B) * 0xffff) / m
+	r = (uint32(c.R)*0xffff + m/2) / m
+	g = (uint32(c.G)*0xffff + m/2) / m
+	b = (uint32(c.B)*0xffff + m/2) / m
 	a = 0xffff
 	return
 }
@@ -96,9 +96,10 @@ func (model RGBMModel) Convert(c color.Color) color.Color {
 	}
 	m := uint32(model.M)
 	r, g, b, _ := c.RGBA()
-	r = (r * m) / 0xffff
-	g = (g * m) / 0xffff
-	b = (b * m) / 0xffff
+	const half = 0xffff / 2
+	r = (r*m + half) / 0xffff
+	g = (g*m + half) / 0xffff
+	b = (b*m + half) / 0xffff
 	return RGBM{R: uint8(r), G: uint8(g), B: uint8(b), M: uint8(m)}
 }
 
@@ -112,9 +113,9 @@ type RGBM64 struct {
 // RGBA converts an RGBM64 to alpha-premultiplied R, G, B, and A.
 func (c RGBM64) RGBA() (r, g, b, a uint32) {
 	m := uint32(c.M)
-	r = (uint32(c.R) * 0xffff) / m
-	g = (uint32(c.G) * 0xffff) / m
-	b = (uint32(c.B) * 0xffff) / m
+	r = (uint32(c.R)*0xffff + m/2) / m
+	g = (uint32(c.G)*0xffff + m/2) / m
+	b = (uint32(c.B)*0xffff + m/2) / m
 	a = 0xffff
 	return
 }
@@ -131,8 +132,9 @@ func (model RGBM64Model) Convert(c color.Color) color.Color {
 	}
 	m := uint32(model.M)
 	r, g, b, _ := c.RGBA()
-	r = (r * m) / 0xffff
-	g = (g * m) / 0xffff
-	b = (b * m) / 0xffff
+	const half = 0xffff / 2
+	r = (r*m + half) / 0xffff
+	g = (g*m + half) / 0xffff
+	b = (b*m + half) / 0xffff
 	return RGBM64{R: uint16(r), G: uint16(g), B: uint16(b), M: uint16(m)}
 }

@@ -254,12 +254,14 @@ func Decode(r io.Reader, opt *DecodeOptions) (Image, error) {
 // EncodeOptions represents a list of options for writing a Netpbm file.
 type EncodeOptions struct {
 	Format   Format // Netpbm format
-	MaxValue uint16 // Maximum value for each color channel
+	MaxValue uint16 // Maximum value for each color channel (ignored for PBM)
 	Plain    bool   // true="plain" (ASCII); false="raw" (binary)
 	Comment  string // Header comment
 }
 
-// Encode writes an arbitrary image in any of the Netpbm formats.
+// Encode writes an arbitrary image in any of the Netpbm formats.  If opts is
+// nil, Encode will default to a producing a raw PPM file with no header
+// comment and a maximum color-channel value of 255.
 func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	var o EncodeOptions
 	if opts == nil {
@@ -271,7 +273,7 @@ func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	} else {
 		// Ensure the provided options are sensible.
 		o = *opts
-		if o.MaxValue == 0 {
+		if o.MaxValue < 0 {
 			return errors.New("MaxValue must be greater than 0")
 		}
 	}
@@ -287,8 +289,8 @@ func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	}
 }
 
-// writePlainData writes numbers read from a channel as base-10 strings, 70
-// characters per line.
+// writePlainData writes numbers read from a channel as base-10 strings, at
+// most 70 characters per line.
 func writePlainData(w io.Writer, ch chan uint16) error {
 	var line string
 	for s := range ch {
