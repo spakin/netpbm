@@ -109,6 +109,11 @@ func (p *GrayM) MaxValue() uint16 {
 	return uint16(p.Model.M)
 }
 
+// Format identifies the image as a PGM image.
+func (p *GrayM) Format() Format {
+	return PGM
+}
+
 // PromoteToRGBM generates an 8-bit color image that looks identical to
 // the given grayscale image.
 func (g *GrayM) PromoteToRGBM() *RGBM {
@@ -226,6 +231,11 @@ func (p *GrayM32) Opaque() bool {
 // MaxValue returns the maximum grayscale value allowed.
 func (p *GrayM32) MaxValue() uint16 {
 	return uint16(p.Model.M)
+}
+
+// Format identifies the image as a PGM image.
+func (p *GrayM32) Format() Format {
+	return PGM
 }
 
 // PromoteToRGBM64 generates a 16-bit color image that looks identical to

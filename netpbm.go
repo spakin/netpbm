@@ -129,10 +129,11 @@ func (nr *netpbmReader) GetNetpbmHeader() (netpbmHeader, bool) {
 	return header, true
 }
 
-// An Image extends image.Image to include a MaxValue method.
+// An Image extends image.Image to include a few extra methods.
 type Image interface {
 	image.Image
-	MaxValue() uint16
+	MaxValue() uint16 // Maximum value on each color channel
+	Format() Format   // Netpbm format
 }
 
 // A Format represents a specific Netpbm format.
@@ -183,13 +184,13 @@ func DecodeConfig(r io.Reader) (image.Config, error) {
 }
 
 // Decode reads a Netpbm image from r and returns it as an Image.
-func Decode(r io.Reader, opt *DecodeOptions) (Image, error) {
+func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
 	// Determine the set of all formats allowed.
 	var allowed Format
-	if opt == nil || opt.Allowed == 0 {
+	if opts == nil || opts.Allowed == 0 {
 		allowed = PBM | PGM | PPM
 	} else {
-		allowed = opt.Allowed
+		allowed = opts.Allowed
 	}
 
 	// Peek at the file's magic number.

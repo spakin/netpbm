@@ -22,6 +22,11 @@ func (p *BW) MaxValue() uint16 {
 	return 1
 }
 
+// Format identifies the image as a PBM image.
+func (p *BW) Format() Format {
+	return PBM
+}
+
 // NewBW returns a new black-and-white image with the given bounds and
 // maximum value.
 func NewBW(r image.Rectangle) *BW {

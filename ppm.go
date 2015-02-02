@@ -115,6 +115,11 @@ func (p *RGBM) MaxValue() uint16 {
 	return uint16(p.Model.M)
 }
 
+// Format identifies the image as a PPM image.
+func (p *RGBM) Format() Format {
+	return PPM
+}
+
 // NewRGBM returns a new RGBM with the given bounds and maximum channel value.
 func NewRGBM(r image.Rectangle, m uint8) *RGBM {
 	w, h := r.Dx(), r.Dy()
@@ -234,6 +239,11 @@ func (p *RGBM64) Opaque() bool {
 // MaxValue returns the maximum value allowed on any color channel.
 func (p *RGBM64) MaxValue() uint16 {
 	return uint16(p.Model.M)
+}
+
+// Format identifies the image as a PPM image.
+func (p *RGBM64) Format() Format {
+	return PPM
 }
 
 // NewRGBM64 returns a new RGBM64 with the given bounds and maximum channel
