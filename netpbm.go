@@ -141,14 +141,33 @@ type Format int
 
 // Define a symbol for each supported Netpbm format.
 const (
-	PBM Format = 1 << iota
-	PGM
-	PPM
+	PNM Format = iota // Portable Any Map (any of PBM, PGM, or PPM)
+	PBM               // Portable Bit Map (black and white)
+	PGM               // Portable Gray Map (grayscale)
+	PPM               // Portable Pix Map (color)
 )
+
+// String outputs the name of a Netpbm format.
+func (f Format) String() string {
+	switch f {
+	case PNM:
+		return "PNM"
+	case PBM:
+		return "PBM"
+	case PGM:
+		return "PGM"
+	case PPM:
+		return "PPM"
+	default:
+		return fmt.Sprintf("%%!s(netpbm.Format=%d)", f)
+	}
+}
 
 // DecodeOptions represents a list of options for decoding a Netpbm file.
 type DecodeOptions struct {
-	Allowed Format // Bit mask of Netpbm formats allowed (0 = all)
+	Target      Format // Netpbm format to return
+	Exact       bool   // true=allow only Target; false=promote lesser formats
+	PBMMaxValue uint16 // Maximum channel value to use when promoting a PBM image (0=default)
 }
 
 // DecodeConfig returns image metadata without decoding the entire image.
@@ -185,14 +204,6 @@ func DecodeConfig(r io.Reader) (image.Config, error) {
 
 // Decode reads a Netpbm image from r and returns it as an Image.
 func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
-	// Determine the set of all formats allowed.
-	var allowed Format
-	if opts == nil || opts.Allowed == 0 {
-		allowed = PBM | PGM | PPM
-	} else {
-		allowed = opts.Allowed
-	}
-
 	// Peek at the file's magic number.
 	rr, ok := r.(*bufio.Reader)
 	if !ok {
@@ -202,46 +213,60 @@ func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// Invoke the decode function corresponding to the magic number.
 	if magic[0] != 'P' {
 		return nil, errors.New("Not a Netpbm image")
 	}
+
+	// Provide default options.
+	var o DecodeOptions
+	if opts != nil {
+		o = *opts
+	}
+	if o.PBMMaxValue == 0 {
+		o.PBMMaxValue = 255
+	}
+	if o.Exact && o.Target == PNM {
+		// PNM isn't its own format so it doesn't make sense to try to
+		// read exactly a PNM file.
+		return nil, errors.New("Exact=true is incompatible with Target=PNM")
+	}
+
+	// Invoke the decode function corresponding to the magic number.
 	var img image.Image // Image to return
 	switch magic[1] {
 	case '1':
 		// Plain PBM
-		if allowed&PBM != PBM {
+		if o.Exact && o.Target != PBM {
 			return nil, errors.New("PBM rejected by Decode options")
 		}
 		img, err = decodePBMPlain(rr)
 	case '2':
 		// Plain PGM
-		if allowed&PGM != PGM {
+		if o.Exact && o.Target != PGM {
 			return nil, errors.New("PGM rejected by Decode options")
 		}
 		img, err = decodePGMPlain(rr)
 	case '3':
 		// Plain PPM
-		if allowed&PPM != PPM {
+		if o.Exact && o.Target != PPM {
 			return nil, errors.New("PPM rejected by Decode options")
 		}
 		img, err = decodePPMPlain(rr)
 	case '4':
 		// Raw PBM
-		if allowed&PBM != PBM {
+		if o.Exact && o.Target != PBM {
 			return nil, errors.New("PBM rejected by Decode options")
 		}
 		img, err = decodePBM(rr)
 	case '5':
 		// Raw PGM
-		if allowed&PGM != PGM {
+		if o.Exact && o.Target != PGM {
 			return nil, errors.New("PGM rejected by Decode options")
 		}
 		img, err = decodePGM(rr)
 	case '6':
 		// Raw PPM
-		if allowed&PPM != PPM {
+		if o.Exact && o.Target != PPM {
 			return nil, errors.New("PPM rejected by Decode options")
 		}
 		img, err = decodePPM(rr)
@@ -249,7 +274,41 @@ func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
 		// None of the above
 		return nil, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
 	}
-	return img.(Image), err
+	if err != nil {
+		return nil, err
+	}
+
+	// A PNM target accepts any of PBM, PGM, or PPM as is.
+	nimg := img.(Image)
+	if o.Target == PNM {
+		return nimg, nil
+	}
+
+	// If requested, promote the image to a richer format.  We've already
+	// rejected the case of a mismatch when mismatches are forbidden.
+	if nimg.Format() > o.Target {
+		return nil, fmt.Errorf("Cannot demote a %s image to a %s image", nimg.Format(), o.Target)
+	}
+	for nimg.Format() < o.Target {
+		switch nimg.Format() {
+		case PBM:
+			mVal := o.PBMMaxValue
+			if mVal < 256 {
+				nimg = nimg.(*BW).PromoteToGrayM(uint8(mVal))
+			} else {
+				nimg = nimg.(*BW).PromoteToGrayM32(mVal)
+			}
+		case PGM:
+			if nimg.MaxValue() < 256 {
+				nimg = nimg.(*GrayM).PromoteToRGBM()
+			} else {
+				nimg = nimg.(*GrayM32).PromoteToRGBM64()
+			}
+		default:
+			panic("Attempted to promote a format other than PBM or PFM")
+		}
+	}
+	return nimg, nil
 }
 
 // EncodeOptions represents a list of options for writing a Netpbm file.
@@ -261,15 +320,24 @@ type EncodeOptions struct {
 }
 
 // Encode writes an arbitrary image in any of the Netpbm formats.  If opts is
-// nil, Encode will default to a producing a raw PPM file with no header
-// comment and a maximum color-channel value of 255.
+// nil, Encode will default to matching the image format if the image is a
+// Netpbm image or producing a raw PPM file with no header comment and a
+// maximum color-channel value of 255 for any other image type.
 func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	var o EncodeOptions
 	if opts == nil {
 		// Select some reasonable default options.
-		o = EncodeOptions{
-			Format:   PPM,
-			MaxValue: 255,
+		switch img := img.(type) {
+		case Image:
+			o = EncodeOptions{
+				Format:   img.Format(),
+				MaxValue: img.MaxValue(),
+			}
+		default:
+			o = EncodeOptions{
+				Format:   PPM,
+				MaxValue: 255,
+			}
 		}
 	} else {
 		// Ensure the provided options are sensible.
@@ -286,7 +354,7 @@ func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	case PBM:
 		return encodePBM(w, img, &o)
 	default:
-		return errors.New("Invalid Netpbm format specified")
+		return fmt.Errorf("Invalid Netpbm format specified (%s)", o.Format)
 	}
 }
 
