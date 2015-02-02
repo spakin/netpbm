@@ -31,6 +31,28 @@ func NewBW(r image.Rectangle) *BW {
 	return &BW{image.NewPaletted(r, colorMap)}
 }
 
+// PromoteToGrayM generates an 8-bit grayscale image that looks identical to
+// the given black-and-white image.  It takes as input a maximum channel value.
+func (bw *BW) PromoteToGrayM(m uint8) *GrayM {
+	gray := NewGrayM(bw.Bounds(), m)
+	for i, p := range bw.Pix {
+		gray.Pix[i] = (1 - p) * m // PBM defines 0=white, 1=black.
+	}
+	return gray
+}
+
+// PromoteToGrayM32 generates an 16-bit grayscale image that looks identical to
+// the given black-and-white image.  It takes as input a maximum channel value.
+func (bw *BW) PromoteToGrayM32(m uint16) *GrayM32 {
+	gray := NewGrayM32(bw.Bounds(), m)
+	for i, p := range bw.Pix {
+		g := uint16(1-p) * m // PBM defines 0=white, 1=black.
+		gray.Pix[i*2+0] = uint8(g >> 8)
+		gray.Pix[i*2+1] = uint8(g)
+	}
+	return gray
+}
+
 // decodeConfigPBM reads and parses a PBM header, either "raw" (binary) or
 // "plain" (ASCII).
 func decodeConfigPBM(r io.Reader) (image.Config, error) {

@@ -109,6 +109,18 @@ func (p *GrayM) MaxValue() uint16 {
 	return uint16(p.Model.M)
 }
 
+// PromoteToRGBM generates an 8-bit color image that looks identical to
+// the given grayscale image.
+func (g *GrayM) PromoteToRGBM() *RGBM {
+	rgb := NewRGBM(g.Bounds(), g.Model.M)
+	for i, p := range g.Pix {
+		rgb.Pix[i*3+0] = p
+		rgb.Pix[i*3+1] = p
+		rgb.Pix[i*3+2] = p
+	}
+	return rgb
+}
+
 // NewGrayM returns a new GrayM with the given bounds and maximum channel
 // value.
 func NewGrayM(r image.Rectangle, m uint8) *GrayM {
@@ -214,6 +226,20 @@ func (p *GrayM32) Opaque() bool {
 // MaxValue returns the maximum grayscale value allowed.
 func (p *GrayM32) MaxValue() uint16 {
 	return uint16(p.Model.M)
+}
+
+// PromoteToRGBM64 generates a 16-bit color image that looks identical to
+// the given grayscale image.
+func (g *GrayM32) PromoteToRGBM64() *RGBM64 {
+	rgb := NewRGBM64(g.Bounds(), g.Model.M)
+	for i, p := range g.Pix {
+		base := i / 2
+		ofs := i % 2
+		rgb.Pix[base*6+ofs+0] = p
+		rgb.Pix[base*6+ofs+2] = p
+		rgb.Pix[base*6+ofs+4] = p
+	}
+	return rgb
 }
 
 // NewGrayM32 returns a new GrayM32 with the given bounds and maximum channel
