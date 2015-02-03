@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/color"
 	"io"
 	"unicode"
 )
@@ -131,9 +132,13 @@ func (nr *netpbmReader) GetNetpbmHeader() (netpbmHeader, bool) {
 
 // An Image extends image.Image to include a few extra methods.
 type Image interface {
-	image.Image
-	MaxValue() uint16 // Maximum value on each color channel
-	Format() Format   // Netpbm format
+	image.Image                             // At, Bounds, and ColorModel
+	MaxValue() uint16                       // Maximum value on each color channel
+	Format() Format                         // Netpbm format
+	Opaque() bool                           // Report whether the image is fully opaque
+	PixOffset(x, y int) int                 // Find (x, y) in pixel data
+	Set(x, y int, c color.Color)            // Set a pixel to a color
+	SubImage(r image.Rectangle) image.Image // Portion of the image visible through r
 }
 
 // A Format represents a specific Netpbm format.
