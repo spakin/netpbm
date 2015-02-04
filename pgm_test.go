@@ -37,9 +37,12 @@ func TestDecodeRawPGM(t *testing.T) {
 	if str != "pgm" {
 		t.Fatalf("Expected pgm but received %s", str)
 	}
-	_, ok := img.(Image)
+	nimg, ok := img.(Image)
 	if !ok {
 		t.Fatal("Image is not a Netpbm image")
+	}
+	if nimg.MaxValue() != 255 {
+		t.Fatalf("Expected a maximum value of 266 but received %d", nimg.MaxValue())
 	}
 }
 
@@ -68,6 +71,9 @@ func TestNetpbmDecodeRawPGM(t *testing.T) {
 	if img.Format() != PGM {
 		t.Fatalf("Expected PGM but received %s", img.Format())
 	}
+	if img.MaxValue() != 255 {
+		t.Fatalf("Expected a maximum value of 255 but received %d", img.MaxValue())
+	}
 }
 
 // Determine if netpbm.Decode can decode a raw PGM file with non-default
@@ -78,6 +84,22 @@ func TestNetpbmDecodeRawPGMOpts(t *testing.T) {
 	img, err := Decode(r, &DecodeOptions{
 		Target: PGM,
 		Exact:  true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PGM {
+		t.Fatalf("Expected PGM but received %s", img.Format())
+	}
+}
+
+// Determine if netpbm.Decode can decode a PBM file with PGM options.
+func TestNetpbmDecodePBMPGMOpts(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pbmRaw))
+	defer r.Close()
+	img, err := Decode(r, &DecodeOptions{
+		Target: PGM,
+		Exact:  false,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -115,9 +137,12 @@ func TestDecodePlainPGM(t *testing.T) {
 	if str != "pgm" {
 		t.Fatalf("Expected pgm but received %s", str)
 	}
-	_, ok := img.(Image)
+	nimg, ok := img.(Image)
 	if !ok {
 		t.Fatal("Image is not a Netpbm image")
+	}
+	if nimg.MaxValue() != 777 {
+		t.Fatalf("Expected a maximum value of 777 but received %d", nimg.MaxValue())
 	}
 }
 
@@ -146,6 +171,9 @@ func TestNetpbmDecodePlainPGM(t *testing.T) {
 	if img.Format() != PGM {
 		t.Fatalf("Expected PGM but received %s", img.Format())
 	}
+	if img.MaxValue() != 777 {
+		t.Fatalf("Expected a maximum value of 777 but received %d", img.MaxValue())
+	}
 }
 
 // Determine if netpbm.Decode can decode a plain PGM file with non-default
@@ -162,5 +190,8 @@ func TestNetpbmDecodePlainPGMOpts(t *testing.T) {
 	}
 	if img.Format() != PGM {
 		t.Fatalf("Expected PGM but received %s", img.Format())
+	}
+	if img.MaxValue() != 777 {
+		t.Fatalf("Expected a maximum value of 777 but received %d", img.MaxValue())
 	}
 }

@@ -37,9 +37,12 @@ func TestDecodeRawPPM(t *testing.T) {
 	if str != "ppm" {
 		t.Fatalf("Expected ppm but received %s", str)
 	}
-	_, ok := img.(Image)
+	nimg, ok := img.(Image)
 	if !ok {
 		t.Fatal("Image is not a Netpbm image")
+	}
+	if nimg.MaxValue() != 255 {
+		t.Fatalf("Expected a maximum value of 266 but received %d", nimg.MaxValue())
 	}
 }
 
@@ -68,6 +71,9 @@ func TestNetpbmDecodeRawPPM(t *testing.T) {
 	if img.Format() != PPM {
 		t.Fatalf("Expected PPM but received %s", img.Format())
 	}
+	if img.MaxValue() != 255 {
+		t.Fatalf("Expected a maximum value of 255 but received %d", img.MaxValue())
+	}
 }
 
 // Determine if netpbm.Decode can decode a raw PPM file with non-default
@@ -78,6 +84,38 @@ func TestNetpbmDecodeRawPPMOpts(t *testing.T) {
 	img, err := Decode(r, &DecodeOptions{
 		Target: PPM,
 		Exact:  true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PPM {
+		t.Fatalf("Expected PPM but received %s", img.Format())
+	}
+}
+
+// Determine if netpbm.Decode can decode a PGM file with PPM options.
+func TestNetpbmDecodePGMPPMOpts(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pgmRaw))
+	defer r.Close()
+	img, err := Decode(r, &DecodeOptions{
+		Target: PPM,
+		Exact:  false,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PPM {
+		t.Fatalf("Expected PPM but received %s", img.Format())
+	}
+}
+
+// Determine if netpbm.Decode can decode a plain PBM file with PPM options.
+func TestNetpbmDecodePlainPBMPPMOpts(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pbmPlain))
+	defer r.Close()
+	img, err := Decode(r, &DecodeOptions{
+		Target: PPM,
+		Exact:  false,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -115,9 +153,12 @@ func TestDecodePlainPPM(t *testing.T) {
 	if str != "ppm" {
 		t.Fatalf("Expected ppm but received %s", str)
 	}
-	_, ok := img.(Image)
+	nimg, ok := img.(Image)
 	if !ok {
 		t.Fatal("Image is not a Netpbm image")
+	}
+	if nimg.MaxValue() != 777 {
+		t.Fatalf("Expected a maximum value of 777 but received %d", nimg.MaxValue())
 	}
 }
 
@@ -146,6 +187,9 @@ func TestNetpbmDecodePlainPPM(t *testing.T) {
 	if img.Format() != PPM {
 		t.Fatalf("Expected PPM but received %s", img.Format())
 	}
+	if img.MaxValue() != 777 {
+		t.Fatalf("Expected a maximum value of 777 but received %d", img.MaxValue())
+	}
 }
 
 // Determine if netpbm.Decode can decode a plain PPM file with non-default
@@ -162,5 +206,8 @@ func TestNetpbmDecodePlainPPMOpts(t *testing.T) {
 	}
 	if img.Format() != PPM {
 		t.Fatalf("Expected PPM but received %s", img.Format())
+	}
+	if img.MaxValue() != 777 {
+		t.Fatalf("Expected a maximum value of 777 but received %d", img.MaxValue())
 	}
 }
