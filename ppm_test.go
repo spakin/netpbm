@@ -42,7 +42,7 @@ func TestDecodeRawPPM(t *testing.T) {
 		t.Fatal("Image is not a Netpbm image")
 	}
 	if nimg.MaxValue() != 255 {
-		t.Fatalf("Expected a maximum value of 266 but received %d", nimg.MaxValue())
+		t.Fatalf("Expected a maximum value of 255 but received %d", nimg.MaxValue())
 	}
 }
 
