@@ -49,7 +49,12 @@ func (p *RGBM) RGBMAt(x, y int) npcolor.RGBM {
 		return npcolor.RGBM{}
 	}
 	i := p.PixOffset(x, y)
-	return npcolor.RGBM{p.Pix[i+0], p.Pix[i+1], p.Pix[i+2], p.Model.M}
+	return npcolor.RGBM{
+		R: p.Pix[i+0],
+		G: p.Pix[i+1],
+		B: p.Pix[i+2],
+		M: p.Model.M,
+	}
 }
 
 // PixOffset returns the index of the first element of Pix that corresponds to
@@ -124,7 +129,7 @@ func (p *RGBM) Format() Format {
 func NewRGBM(r image.Rectangle, m uint8) *RGBM {
 	w, h := r.Dx(), r.Dy()
 	pix := make([]uint8, 3*w*h)
-	model := npcolor.RGBMModel{m}
+	model := npcolor.RGBMModel{M: m}
 	return &RGBM{pix, 3 * w, r, model}
 }
 
@@ -165,10 +170,10 @@ func (p *RGBM64) RGBM64At(x, y int) npcolor.RGBM64 {
 	}
 	i := p.PixOffset(x, y)
 	return npcolor.RGBM64{
-		uint16(p.Pix[i+0])<<8 | uint16(p.Pix[i+1]),
-		uint16(p.Pix[i+2])<<8 | uint16(p.Pix[i+3]),
-		uint16(p.Pix[i+4])<<8 | uint16(p.Pix[i+5]),
-		p.Model.M,
+		R: uint16(p.Pix[i+0])<<8 | uint16(p.Pix[i+1]),
+		G: uint16(p.Pix[i+2])<<8 | uint16(p.Pix[i+3]),
+		B: uint16(p.Pix[i+4])<<8 | uint16(p.Pix[i+5]),
+		M: p.Model.M,
 	}
 }
 
@@ -251,7 +256,7 @@ func (p *RGBM64) Format() Format {
 func NewRGBM64(r image.Rectangle, m uint16) *RGBM64 {
 	w, h := r.Dx(), r.Dy()
 	pix := make([]uint8, 6*w*h)
-	model := npcolor.RGBM64Model{m}
+	model := npcolor.RGBM64Model{M: m}
 	return &RGBM64{pix, 6 * w, r, model}
 }
 
@@ -281,9 +286,9 @@ func decodeConfigPPM(r io.Reader) (image.Config, error) {
 	cfg.Width = header.Width
 	cfg.Height = header.Height
 	if header.Maxval < 256 {
-		cfg.ColorModel = npcolor.RGBMModel{uint8(header.Maxval)}
+		cfg.ColorModel = npcolor.RGBMModel{M: uint8(header.Maxval)}
 	} else {
-		cfg.ColorModel = npcolor.RGBM64Model{uint16(header.Maxval)}
+		cfg.ColorModel = npcolor.RGBM64Model{M: uint16(header.Maxval)}
 	}
 	return cfg, nil
 }
@@ -439,7 +444,7 @@ func encodeRGBData(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	width := rect.Max.X - rect.Min.X
 	samples := make(chan uint16, width*3)
 	go func() {
-		cm := npcolor.RGBMModel{uint8(opts.MaxValue)}
+		cm := npcolor.RGBMModel{M: uint8(opts.MaxValue)}
 		for y := rect.Min.Y; y < rect.Max.Y; y++ {
 			for x := rect.Min.X; x < rect.Max.X; x++ {
 				c := cm.Convert(img.At(x, y)).(npcolor.RGBM)
@@ -467,7 +472,7 @@ func encodeRGB64Data(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	width := rect.Max.X - rect.Min.X
 	samples := make(chan uint16, width*3)
 	go func() {
-		cm := npcolor.RGBM64Model{opts.MaxValue}
+		cm := npcolor.RGBM64Model{M: opts.MaxValue}
 		for y := rect.Min.Y; y < rect.Max.Y; y++ {
 			for x := rect.Min.X; x < rect.Max.X; x++ {
 				c := cm.Convert(img.At(x, y)).(npcolor.RGBM64)

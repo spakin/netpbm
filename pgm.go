@@ -48,7 +48,7 @@ func (p *GrayM) GrayMAt(x, y int) npcolor.GrayM {
 		return npcolor.GrayM{}
 	}
 	i := p.PixOffset(x, y)
-	return npcolor.GrayM{p.Pix[i], p.Model.M}
+	return npcolor.GrayM{Y: p.Pix[i], M: p.Model.M}
 }
 
 // PixOffset returns the index of the first element of Pix that corresponds to
@@ -131,7 +131,7 @@ func (g *GrayM) PromoteToRGBM() *RGBM {
 func NewGrayM(r image.Rectangle, m uint8) *GrayM {
 	w, h := r.Dx(), r.Dy()
 	pix := make([]uint8, 1*w*h)
-	model := npcolor.GrayMModel{m}
+	model := npcolor.GrayMModel{M: m}
 	return &GrayM{pix, 1 * w, r, model}
 }
 
@@ -168,7 +168,10 @@ func (p *GrayM32) GrayM32At(x, y int) npcolor.GrayM32 {
 		return npcolor.GrayM32{}
 	}
 	i := p.PixOffset(x, y)
-	return npcolor.GrayM32{uint16(p.Pix[i+0])<<8 | uint16(p.Pix[i+1]), p.Model.M}
+	return npcolor.GrayM32{
+		Y: uint16(p.Pix[i+0])<<8 | uint16(p.Pix[i+1]),
+		M: p.Model.M,
+	}
 }
 
 // PixOffset returns the index of the first element of Pix that corresponds to
@@ -257,7 +260,7 @@ func (g *GrayM32) PromoteToRGBM64() *RGBM64 {
 func NewGrayM32(r image.Rectangle, m uint16) *GrayM32 {
 	w, h := r.Dx(), r.Dy()
 	pix := make([]uint8, 2*w*h)
-	model := npcolor.GrayM32Model{m}
+	model := npcolor.GrayM32Model{M: m}
 	return &GrayM32{pix, 2 * w, r, model}
 }
 
@@ -287,9 +290,9 @@ func decodeConfigPGM(r io.Reader) (image.Config, error) {
 	cfg.Width = header.Width
 	cfg.Height = header.Height
 	if header.Maxval < 256 {
-		cfg.ColorModel = npcolor.GrayMModel{uint8(header.Maxval)}
+		cfg.ColorModel = npcolor.GrayMModel{M: uint8(header.Maxval)}
 	} else {
-		cfg.ColorModel = npcolor.GrayM32Model{uint16(header.Maxval)}
+		cfg.ColorModel = npcolor.GrayM32Model{M: uint16(header.Maxval)}
 	}
 	return cfg, nil
 }
@@ -445,7 +448,7 @@ func encodeGrayData(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	width := rect.Max.X - rect.Min.X
 	samples := make(chan uint16, width)
 	go func() {
-		cm := npcolor.GrayMModel{uint8(opts.MaxValue)}
+		cm := npcolor.GrayMModel{M: uint8(opts.MaxValue)}
 		for y := rect.Min.Y; y < rect.Max.Y; y++ {
 			for x := rect.Min.X; x < rect.Max.X; x++ {
 				c := cm.Convert(img.At(x, y)).(npcolor.GrayM)
@@ -471,7 +474,7 @@ func encodeGray32Data(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	width := rect.Max.X - rect.Min.X
 	samples := make(chan uint16, width)
 	go func() {
-		cm := npcolor.GrayM32Model{opts.MaxValue}
+		cm := npcolor.GrayM32Model{M: opts.MaxValue}
 		for y := rect.Min.Y; y < rect.Max.Y; y++ {
 			for x := rect.Min.X; x < rect.Max.X; x++ {
 				c := cm.Convert(img.At(x, y)).(npcolor.GrayM32)
