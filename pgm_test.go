@@ -111,6 +111,12 @@ func TestNetpbmDecodePBMPGMOpts(t *testing.T) {
 	}
 }
 
+// TestNetpgmEncodePGM confirms that encoding and decoding do not alter a raw
+// PGM file.
+func TestNetpgmEncodePGM(t *testing.T) {
+	repeatDecodeEncode(t, pgmRaw)
+}
+
 // TestDecodePlainPGMConfig determines if image.DecodeConfig can decode the
 // configuration of a plain PGM file.
 func TestDecodePlainPGMConfig(t *testing.T) {
@@ -197,4 +203,10 @@ func TestNetpbmDecodePlainPGMOpts(t *testing.T) {
 	if img.MaxValue() != 777 {
 		t.Fatalf("Expected a maximum value of 777 but received %d", img.MaxValue())
 	}
+}
+
+// TestNetpgmEncodePlainPGM confirms that encoding and decoding do not alter a
+// plain PGM file.
+func TestNetpgmEncodePlainPGM(t *testing.T) {
+	repeatDecodeEncode(t, pgmPlain)
 }

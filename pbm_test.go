@@ -94,6 +94,12 @@ func TestNetpbmDecodeRawPBMOpts(t *testing.T) {
 	}
 }
 
+// TestNetpbmEncodePBM confirms that encoding and decoding do not alter a raw
+// PBM file.
+func TestNetpbmEncodePBM(t *testing.T) {
+	repeatDecodeEncode(t, pbmRaw)
+}
+
 // TestDecodePlainPBMConfig determines if image.DecodeConfig can decode the
 // configuration of a plain PBM file.
 func TestDecodePlainPBMConfig(t *testing.T) {
@@ -180,4 +186,10 @@ func TestNetpbmDecodePlainPBMOpts(t *testing.T) {
 	if img.MaxValue() != 1 {
 		t.Fatalf("Expected a maximum value of 1 but received %d", img.MaxValue())
 	}
+}
+
+// TestNetpbmEncodePlainPBM confirms that encoding and decoding do not alter a
+// plain PBM file.
+func TestNetpbmEncodePlainPBM(t *testing.T) {
+	repeatDecodeEncode(t, pbmPlain)
 }

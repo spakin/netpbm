@@ -110,6 +110,12 @@ func TestNetpbmDecodePGMPPMOpts(t *testing.T) {
 	}
 }
 
+// TestNetppmEncodePPM confirms that encoding and decoding do not alter a raw
+// PPM file.
+func TestNetppmEncodePPM(t *testing.T) {
+	repeatDecodeEncode(t, ppmRaw)
+}
+
 // TestNetpbmDecodePlainPBMPPMOpts determines if netpbm.Decode can decode a
 // plain PBM file with PPM options.
 func TestNetpbmDecodePlainPBMPPMOpts(t *testing.T) {
@@ -213,4 +219,10 @@ func TestNetpbmDecodePlainPPMOpts(t *testing.T) {
 	if img.MaxValue() != 777 {
 		t.Fatalf("Expected a maximum value of 777 but received %d", img.MaxValue())
 	}
+}
+
+// TestNetppmEncodePlainPPM confirms that encoding and decoding do not alter a
+// plain PPM file.
+func TestNetppmEncodePlainPPM(t *testing.T) {
+	repeatDecodeEncode(t, ppmPlain)
 }
