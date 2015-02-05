@@ -9,8 +9,8 @@ import (
 	"testing"
 )
 
-// Determine if image.DecodeConfig can decode the configuration of a raw PGM
-// file.
+// TestDecodeRawPGMConfig determines if image.DecodeConfig can decode the
+// configuration of a raw PGM file.
 func TestDecodeRawPGMConfig(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmRaw))
 	defer r.Close()
@@ -26,7 +26,7 @@ func TestDecodeRawPGMConfig(t *testing.T) {
 	}
 }
 
-// Determine if image.Decode can decode a raw PGM file.
+// TestDecodeRawPGM determines if image.Decode can decode a raw PGM file.
 func TestDecodeRawPGM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmRaw))
 	defer r.Close()
@@ -46,8 +46,8 @@ func TestDecodeRawPGM(t *testing.T) {
 	}
 }
 
-// Determine if netpbm.DecodeConfig can decode the configuration of a raw PGM
-// file.
+// TestNetpbmDecodeRawPGMConfig determines if netpbm.DecodeConfig can decode
+// the configuration of a raw PGM file.
 func TestNetpbmDecodeRawPGMConfig(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmRaw))
 	defer r.Close()
@@ -60,7 +60,8 @@ func TestNetpbmDecodeRawPGMConfig(t *testing.T) {
 	}
 }
 
-// Determine if netpbm.Decode can decode a raw PGM file.
+// TestNetpbmDecodeRawPGM determines if netpbm.Decode can decode a raw PGM
+// file.
 func TestNetpbmDecodeRawPGM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmRaw))
 	defer r.Close()
@@ -76,8 +77,8 @@ func TestNetpbmDecodeRawPGM(t *testing.T) {
 	}
 }
 
-// Determine if netpbm.Decode can decode a raw PGM file with non-default
-// options.
+// TestNetpbmDecodeRawPGMOpts determines if netpbm.Decode can decode a raw PGM
+// file with non-default options.
 func TestNetpbmDecodeRawPGMOpts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmRaw))
 	defer r.Close()
@@ -93,7 +94,8 @@ func TestNetpbmDecodeRawPGMOpts(t *testing.T) {
 	}
 }
 
-// Determine if netpbm.Decode can decode a PBM file with PGM options.
+// TestNetpbmDecodePBMPGMOpts determines if netpbm.Decode can decode a PBM file
+// with PGM options.
 func TestNetpbmDecodePBMPGMOpts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmRaw))
 	defer r.Close()
@@ -109,8 +111,8 @@ func TestNetpbmDecodePBMPGMOpts(t *testing.T) {
 	}
 }
 
-// Determine if image.DecodeConfig can decode the configuration of a plain PGM
-// file.
+// TestDecodePlainPGMConfig determines if image.DecodeConfig can decode the
+// configuration of a plain PGM file.
 func TestDecodePlainPGMConfig(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmPlain))
 	defer r.Close()
@@ -126,7 +128,7 @@ func TestDecodePlainPGMConfig(t *testing.T) {
 	}
 }
 
-// Determine if image.Decode can decode a plain PGM file.
+// TestDecodePlainPGM determines if image.Decode can decode a plain PGM file.
 func TestDecodePlainPGM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmPlain))
 	defer r.Close()
@@ -146,8 +148,8 @@ func TestDecodePlainPGM(t *testing.T) {
 	}
 }
 
-// Determine if netpbm.DecodeConfig can decode the configuration of a plain PGM
-// file.
+// TestNetpbmDecodePlainPGMConfig determines if netpbm.DecodeConfig can decode
+// the configuration of a plain PGM file.
 func TestNetpbmDecodePlainPGMConfig(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmPlain))
 	defer r.Close()
@@ -160,7 +162,8 @@ func TestNetpbmDecodePlainPGMConfig(t *testing.T) {
 	}
 }
 
-// Determine if netpbm.Decode can decode a plain PGM file.
+// TestNetpbmDecodePlainPGM determines if netpbm.Decode can decode a plain PGM
+// file.
 func TestNetpbmDecodePlainPGM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmPlain))
 	defer r.Close()
@@ -176,8 +179,8 @@ func TestNetpbmDecodePlainPGM(t *testing.T) {
 	}
 }
 
-// Determine if netpbm.Decode can decode a plain PGM file with non-default
-// options.
+// TestNetpbmDecodePlainPGMOpts determines if netpbm.Decode can decode a plain
+// PGM file with non-default options.
 func TestNetpbmDecodePlainPGMOpts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmPlain))
 	defer r.Close()

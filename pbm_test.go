@@ -9,8 +9,8 @@ import (
 	"testing"
 )
 
-// Determine if image.DecodeConfig can decode the configuration of a raw PBM
-// file.
+// TestDecodeRawPBMConfig determines if image.DecodeConfig can decode the
+// configuration of a raw PBM file.
 func TestDecodeRawPBMConfig(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmRaw))
 	defer r.Close()
@@ -26,7 +26,7 @@ func TestDecodeRawPBMConfig(t *testing.T) {
 	}
 }
 
-// Determine if image.Decode can decode a raw PBM file.
+// TestDecodeRawPBM determines if image.Decode can decode a raw PBM file.
 func TestDecodeRawPBM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmRaw))
 	defer r.Close()
@@ -46,8 +46,8 @@ func TestDecodeRawPBM(t *testing.T) {
 	}
 }
 
-// Determine if netpbm.DecodeConfig can decode the configuration of a raw PBM
-// file.
+// TestNetpbmDecodeRawPBMConfig determines if netpbm.DecodeConfig can decode
+// the configuration of a raw PBM file.
 func TestNetpbmDecodeRawPBMConfig(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmRaw))
 	defer r.Close()
@@ -60,7 +60,8 @@ func TestNetpbmDecodeRawPBMConfig(t *testing.T) {
 	}
 }
 
-// Determine if netpbm.Decode can decode a raw PBM file.
+// TestNetpbmDecodeRawPBM determines if netpbm.Decode can decode a raw PBM
+// file.
 func TestNetpbmDecodeRawPBM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmRaw))
 	defer r.Close()
@@ -76,8 +77,8 @@ func TestNetpbmDecodeRawPBM(t *testing.T) {
 	}
 }
 
-// Determine if netpbm.Decode can decode a raw PBM file with non-default
-// options.
+// TestNetpbmDecodeRawPBMOpts determines if netpbm.Decode can decode a raw PBM
+// file with non-default options.
 func TestNetpbmDecodeRawPBMOpts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmRaw))
 	defer r.Close()
@@ -93,8 +94,8 @@ func TestNetpbmDecodeRawPBMOpts(t *testing.T) {
 	}
 }
 
-// Determine if image.DecodeConfig can decode the configuration of a plain PBM
-// file.
+// TestDecodePlainPBMConfig determines if image.DecodeConfig can decode the
+// configuration of a plain PBM file.
 func TestDecodePlainPBMConfig(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmPlain))
 	defer r.Close()
@@ -110,7 +111,7 @@ func TestDecodePlainPBMConfig(t *testing.T) {
 	}
 }
 
-// Determine if image.Decode can decode a plain PBM file.
+// TestDecodePlainPBM determines if image.Decode can decode a plain PBM file.
 func TestDecodePlainPBM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmPlain))
 	defer r.Close()
@@ -130,8 +131,8 @@ func TestDecodePlainPBM(t *testing.T) {
 	}
 }
 
-// Determine if netpbm.DecodeConfig can decode the configuration of a plain PBM
-// file.
+// TestNetpbmDecodePlainPBMConfig determines if netpbm.DecodeConfig can decode
+// the configuration of a plain PBM file.
 func TestNetpbmDecodePlainPBMConfig(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmPlain))
 	defer r.Close()
@@ -144,7 +145,8 @@ func TestNetpbmDecodePlainPBMConfig(t *testing.T) {
 	}
 }
 
-// Determine if netpbm.Decode can decode a plain PBM file.
+// TestNetpbmDecodePlainPBM determines if netpbm.Decode can decode a plain PBM
+// file.
 func TestNetpbmDecodePlainPBM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmPlain))
 	defer r.Close()
@@ -160,8 +162,8 @@ func TestNetpbmDecodePlainPBM(t *testing.T) {
 	}
 }
 
-// Determine if netpbm.Decode can decode a plain PBM file with non-default
-// options.
+// TestNetpbmDecodePlainPBMOpts determines if netpbm.Decode can decode a plain
+// PBM file with non-default options.
 func TestNetpbmDecodePlainPBMOpts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmPlain))
 	defer r.Close()
