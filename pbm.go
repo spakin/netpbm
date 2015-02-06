@@ -14,7 +14,8 @@ import (
 	"unicode"
 )
 
-// A BW is simply an alias for an image.Paletted.
+// A BW is simply an alias for an image.Paletted.  However, it is intended to
+// represent images containing only white and black in their color palette.
 type BW struct{ *image.Paletted }
 
 // MaxValue returns the maximum index value allowed.

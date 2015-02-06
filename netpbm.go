@@ -1,10 +1,20 @@
 /*
 
-	Package netpbm implements image decoders and encoders for the Netpbm
-	image formats (PBM, PGM, and PPM), in both "raw" (binary) and "plain"
-	(ASCII) versions.
+Package netpbm implements image decoders and encoders for the Netpbm image
+formats: PBM (black and white only), PGM (grayscale), and PPM (color).
+(The newer PAM format is not yet supported.)  Both "raw" (binary) and
+"plain" (ASCII) files can be read and written.  Both 8-bit and 16-bit color
+channels are supported.
 
-	The Netpbm home page is at http://netpbm.sourceforge.net/.
+The netpbm package is fully compatible with the image package in the
+standard library but additionally reproduces the Netpbm library's ability
+to promote formats during decode.  That is, a program that expects a
+grayscale image can also be given a black-and-white image, and a program
+that expects a color image can also be given either a grayscale or a
+black-and-white image.
+
+The Netpbm home page is at http://netpbm.sourceforge.net/.
+
 */
 package netpbm
 
