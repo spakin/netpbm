@@ -1,5 +1,5 @@
-netpbm: Read and write Netpbm images from Go programs
-=====================================================
+netpbm
+======
 
 Introduction
 ------------
@@ -45,7 +45,9 @@ Usage
         _ "github.com/spakin/netpbm"
     )
 
-will enable [`image.Decode`](https://golang.org/pkg/image/#Decode) to import Netpbm image formats.  However, package-specific functions, types, interfaces, and methods are available with a normal (not "`_`") `import`.  See the `netpbm` API documentation for details.
+will enable [`image.Decode`](https://golang.org/pkg/image/#Decode) to import Netpbm image formats.
+
+Various package-specific functions, types, interfaces, and methods are available only with a normal (not "`_`") `import`.  A normal `import` is needed both to export Netpbm images and to exert more precise control over the Netpbm variants that are allowed to be imported.  See the [`netpbm` API documentation](http://godoc.org/github.com/spakin/netpbm) for details.
 
 Copyright and License
 ---------------------
