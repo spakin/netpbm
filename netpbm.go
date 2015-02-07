@@ -8,10 +8,10 @@ channels are supported.
 
 The netpbm package is fully compatible with the image package in the
 standard library but additionally reproduces the Netpbm library's ability
-to promote formats during decode.  That is, a program that expects a
-grayscale image can also be given a black-and-white image, and a program
-that expects a color image can also be given either a grayscale or a
-black-and-white image.
+to promote formats during decode.  That is, a program that expects to read
+a grayscale image can also be given a black-and-white image, and a program
+that expects to read a color image can also be given either a grayscale or
+a black-and-white image.
 
 The Netpbm home page is at http://netpbm.sourceforge.net/.
 
