@@ -185,7 +185,8 @@ type DecodeOptions struct {
 	PBMMaxValue uint16 // Maximum channel value to use when promoting a PBM image (0=default)
 }
 
-// DecodeConfig returns image metadata without decoding the entire image.
+// DecodeConfig returns image metadata without decoding the entire image.  Pass
+// in a bufio.Reader if you intend to read data following the image header.
 func DecodeConfig(r io.Reader) (image.Config, error) {
 	// Peek at the file's magic number.
 	rr, ok := r.(*bufio.Reader)
@@ -217,7 +218,8 @@ func DecodeConfig(r io.Reader) (image.Config, error) {
 	}
 }
 
-// Decode reads a Netpbm image from r and returns it as an Image.
+// Decode reads a Netpbm image from r and returns it as an Image.  Pass in a
+// bufio.Reader if you intend to read data following the image.
 func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
 	// Peek at the file's magic number.
 	rr, ok := r.(*bufio.Reader)
