@@ -254,3 +254,7 @@ func encodeBWData(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	}
 	return nil
 }
+
+func PbmData(w io.Writer, m image.Image) error {
+	return encodeBWData(w, m, &EncodeOptions{})
+}
