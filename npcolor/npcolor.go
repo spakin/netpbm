@@ -126,8 +126,7 @@ func (model RGBMModel) Convert(c color.Color) color.Color {
 }
 
 // RGBM64 represents a 48-bit color and the value used for 100% of a color
-// channel.  Because RGBM64 does not support alpha channels it does make sense
-// to describe it as either "alpha-premultiplied" or "non-alpha-premultiplied".
+// channel.
 type RGBM64 struct {
 	R, G, B, M uint16
 }
@@ -159,4 +158,74 @@ func (model RGBM64Model) Convert(c color.Color) color.Color {
 	g = (g*m + half) / 0xffff
 	b = (b*m + half) / 0xffff
 	return RGBM64{R: uint16(r), G: uint16(g), B: uint16(b), M: uint16(m)}
+}
+
+type RGBAM struct {
+	R, G, B, A, M uint8
+}
+
+// RGBA converts an RGBAM to alpha-premultiplied R, G, B, and A.
+func (c RGBAM) RGBA() (r, g, b, a uint32) {
+	m := uint32(c.M)
+	r = (uint32(c.R)*0xffff + m/2) / m
+	g = (uint32(c.G)*0xffff + m/2) / m
+	b = (uint32(c.B)*0xffff + m/2) / m
+	a = (uint32(c.A)*0xffff + m/2) / m
+	return
+}
+
+// An RGBAMModel represents the maximum value of an RGBM (0-255).
+type RGBAMModel struct {
+	M uint8 // Maximum value of each color channel
+}
+
+// Convert converts an arbitrary color to an RGBM.
+func (model RGBAMModel) Convert(c color.Color) color.Color {
+	if rgba, ok := c.(RGBAM); ok && rgba.M == model.M {
+		return c
+	}
+	m := uint32(model.M)
+	r, g, b, a := c.RGBA()
+	const half = 0xffff / 2
+	r = (r*m + half) / 0xffff
+	g = (g*m + half) / 0xffff
+	b = (b*m + half) / 0xffff
+	a = (a*m + half) / 0xffff
+	return RGBAM{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a), M: uint8(m)}
+}
+
+// RGBAM64 represents a 48-bit color and the value used for 100% of a color
+// channel.
+type RGBAM64 struct {
+	R, G, B, A, M uint16
+}
+
+// RGBA converts an RGBAM64 to alpha-premultiplied R, G, B, and A.
+func (c RGBAM64) RGBA() (r, g, b, a uint32) {
+	m := uint32(c.M)
+	r = (uint32(c.R)*0xffff + m/2) / m
+	g = (uint32(c.G)*0xffff + m/2) / m
+	b = (uint32(c.B)*0xffff + m/2) / m
+	a = (uint32(c.A)*0xffff + m/2) / m
+	return
+}
+
+// An RGBAM64Model represents the maximum value of an RGBAM64 (0-65535).
+type RGBAM64Model struct {
+	M uint16 // Maximum value of each color channel
+}
+
+// Convert converts an arbitrary color to an RGBAM64.
+func (model RGBAM64Model) Convert(c color.Color) color.Color {
+	if rgba, ok := c.(RGBAM64); ok && rgba.M == model.M {
+		return c
+	}
+	m := uint32(model.M)
+	r, g, b, a := c.RGBA()
+	const half = 0xffff / 2
+	r = (r*m + half) / 0xffff
+	g = (g*m + half) / 0xffff
+	b = (b*m + half) / 0xffff
+	a = (a*m + half) / 0xffff
+	return RGBAM64{R: uint16(r), G: uint16(g), B: uint16(b), A: uint16(a), M: uint16(m)}
 }

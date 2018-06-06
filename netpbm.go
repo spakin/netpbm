@@ -25,6 +25,7 @@ import (
 	"image"
 	"image/color"
 	"io"
+	"strings"
 	"unicode"
 )
 
@@ -82,7 +83,7 @@ func (nr *netpbmReader) GetNextInt() int {
 	for c = nr.GetNextByteAsRune(); unicode.IsDigit(c); c = nr.GetNextByteAsRune() {
 		value = value*10 + int(c-'0')
 	}
-	if nr.err != nil {
+	if nr.err != nil && nr.err != io.EOF {
 		return -1
 	}
 	nr.err = nr.UnreadByte()
@@ -92,12 +93,45 @@ func (nr *netpbmReader) GetNextInt() int {
 	return value
 }
 
+func (nr *netpbmReader) GetNextString() string {
+	var c rune
+	for nr.err == nil && !unicode.IsLetter(c) {
+		for c = nr.GetNextByteAsRune(); unicode.IsSpace(c); c = nr.GetNextByteAsRune() {
+		}
+		if c == '#' {
+			// Comment -- discard the rest of the line.
+			for c = nr.GetNextByteAsRune(); c != '\n'; c = nr.GetNextByteAsRune() {
+			}
+		}
+	}
+	if nr.err != nil {
+		return ""
+	}
+
+	sb := strings.Builder{}
+	sb.WriteRune(c)
+
+	for c = nr.GetNextByteAsRune(); unicode.IsLetter(c) || unicode.IsPunct(c); c = nr.GetNextByteAsRune() {
+		_, nr.err = sb.WriteRune(c)
+	}
+	if nr.err != nil && nr.err != io.EOF {
+		return ""
+	}
+	nr.err = nr.UnreadByte()
+	if nr.err != nil {
+		return ""
+	}
+	return sb.String()
+}
+
 // A netpbmHeader encapsulates the components of an image header.
 type netpbmHeader struct {
-	Magic  string // Two-character magic value (e.g., "P6" for PPM)
-	Width  int    // Image width in pixels
-	Height int    // Image height in pixels
-	Maxval int    // Maximum channel value (0-65535)
+	Magic     string // Two-character magic value (e.g., "P6" for PPM)
+	Width     int    // Image width in pixels
+	Height    int    // Image height in pixels
+	Depth     int    // Image pixel depth in bites
+	Maxval    int    // Maximum channel value (0-65535)
+	TupleType string // Image Tuple type (RGB_ALPHA, etc)
 }
 
 // GetNetpbmHeader parses the entire header (PBM, PGM, or PPM; raw or
@@ -160,6 +194,7 @@ const (
 	PBM               // Portable Bit Map (black and white)
 	PGM               // Portable Gray Map (grayscale)
 	PPM               // Portable Pix Map (color)
+	PAM               // Portable Arbitrary Map (alpha)
 )
 
 // String outputs the name of a Netpbm format.
@@ -173,6 +208,8 @@ func (f Format) String() string {
 		return "PGM"
 	case PPM:
 		return "PPM"
+	case PAM:
+		return "PAM"
 	default:
 		return fmt.Sprintf("%%!s(netpbm.Format=%d)", f)
 	}
@@ -212,6 +249,9 @@ func DecodeConfig(r io.Reader) (image.Config, error) {
 	case '3', '6':
 		// PPM
 		return decodeConfigPPM(rr)
+	case '7':
+		// PAM
+		return decodeConfigPAM(rr)
 	default:
 		// None of the above
 		return image.Config{}, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
@@ -287,6 +327,12 @@ func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
 			return nil, errors.New("PPM rejected by Decode options")
 		}
 		img, err = decodePPM(rr)
+	case '7':
+		// Raw PAM
+		if o.Exact && o.Target != PAM {
+			return nil, errors.New("PAM rejected by Decode options")
+		}
+		img, err = decodePAM(rr)
 	default:
 		// None of the above
 		return nil, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
