@@ -6,11 +6,12 @@ Introduction
 
 `netpbm` is a package for the [Go programming language](http://www.golang.org/) that implements image decoders and encoders for the [Netpbm image formats](http://netpbm.sourceforge.net/doc/#formats).  The package supports all of the following:
 
-* All of the Netpbm image formats except for the newer [PAM](http://netpbm.sourceforge.net/doc/pam.html) (portable arbitrary map) format:
+* All of the Netpbm image formats:
 
   - [PBM](http://netpbm.sourceforge.net/doc/pbm.html) (portable bitmap): black and white only
   - [PGM](http://netpbm.sourceforge.net/doc/pgm.html) (portable graymap): grayscale
   - [PPM](http://netpbm.sourceforge.net/doc/ppm.html) (portable pixmap): color
+  - [PAM](http://netpbm.sourceforge.net/doc/pam.html) (portable arbitrary map): alpha
 
 * Both "raw" (binary) and "plain" (ASCII) files
 
