@@ -3,9 +3,11 @@ package netpbm
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"io"
+	"strings"
 	"unicode"
 
 	"github.com/spakin/netpbm/npcolor"
@@ -407,4 +409,92 @@ func decodePAM(r io.Reader) (image.Image, error) {
 		data = data[nRead:]
 	}
 	return img, nil
+}
+
+// Indicate that we can decode PAM files.
+func init() {
+	image.RegisterFormat("pam", "P7", decodePAM, decodeConfigPAM)
+}
+
+// encodePAM writes an arbitrary image in PAM format.
+func encodePAM(w io.Writer, img image.Image, opts *EncodeOptions) error {
+	// Write the PAM header.
+	fmt.Fprintln(w, "P7")
+	if opts.Comment != "" {
+		fmt.Fprintf(w, "# %s\n", strings.Replace(opts.Comment, "\n", "# ", -1))
+	}
+	rect := img.Bounds()
+	width := rect.Max.X - rect.Min.X
+	height := rect.Max.Y - rect.Min.Y
+	fmt.Fprintf(w, "WIDTH %d\n", width)
+	fmt.Fprintf(w, "HEIGHT %d\n", height)
+	fmt.Fprintf(w, "DEPTH 4\n")
+	fmt.Fprintf(w, "MAXVAL %d\n", opts.MaxValue)
+	fmt.Fprintf(w, "TUPLTYPE RGB_ALPHA\n")
+	fmt.Fprintf(w, "ENDHDR\n")
+
+	// Write the PPM data.
+	if opts.MaxValue < 256 {
+		return encodeRGBAData(w, img, opts)
+	} else {
+		return encodeRGBA64Data(w, img, opts)
+	}
+}
+
+// encodeRGBAData writes image data as 8-bit samples.
+func encodeRGBAData(w io.Writer, img image.Image, opts *EncodeOptions) error {
+	// In the background, write each 8-bit color sample into a channel.
+	rect := img.Bounds()
+	width := rect.Max.X - rect.Min.X
+	samples := make(chan uint16, width*3)
+	go func() {
+		cm := npcolor.RGBAMModel{M: uint8(opts.MaxValue)}
+		for y := rect.Min.Y; y < rect.Max.Y; y++ {
+			for x := rect.Min.X; x < rect.Max.X; x++ {
+				c := cm.Convert(img.At(x, y)).(npcolor.RGBAM)
+				samples <- uint16(c.R)
+				samples <- uint16(c.G)
+				samples <- uint16(c.B)
+				samples <- uint16(c.A)
+			}
+		}
+		close(samples)
+	}()
+
+	// In the foreground, consume color samples and write them to the image
+	// file.
+	if opts.Plain {
+		return writePlainData(w, samples)
+	} else {
+		return writeRawData(w, samples, 1)
+	}
+}
+
+// encodeRGBA64Data writes image data as 16-bit samples.
+func encodeRGBA64Data(w io.Writer, img image.Image, opts *EncodeOptions) error {
+	// In the background, write each 16-bit color sample into a channel.
+	rect := img.Bounds()
+	width := rect.Max.X - rect.Min.X
+	samples := make(chan uint16, width*3)
+	go func() {
+		cm := npcolor.RGBAM64Model{M: opts.MaxValue}
+		for y := rect.Min.Y; y < rect.Max.Y; y++ {
+			for x := rect.Min.X; x < rect.Max.X; x++ {
+				c := cm.Convert(img.At(x, y)).(npcolor.RGBAM64)
+				samples <- c.R
+				samples <- c.G
+				samples <- c.B
+				samples <- c.A
+			}
+		}
+		close(samples)
+	}()
+
+	// In the foreground, consume color samples and write them to the image
+	// file.
+	if opts.Plain {
+		return writePlainData(w, samples)
+	} else {
+		return writeRawData(w, samples, 2)
+	}
 }

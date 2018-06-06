@@ -398,7 +398,7 @@ func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 			}
 		default:
 			o = EncodeOptions{
-				Format:   PPM,
+				Format:   PAM,
 				MaxValue: 255,
 			}
 		}
@@ -416,6 +416,8 @@ func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 		return encodePGM(w, img, &o)
 	case PBM:
 		return encodePBM(w, img, &o)
+	case PAM:
+		return encodePAM(w, img, &o)
 	default:
 		return fmt.Errorf("Invalid Netpbm format specified (%s)", o.Format)
 	}
