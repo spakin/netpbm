@@ -3,9 +3,11 @@
 package netpbm
 
 import (
+	"bufio"
 	"bytes"
 	"compress/flate"
 	"image"
+	"strings"
 	"testing"
 )
 
@@ -63,5 +65,99 @@ func repeatDecodeEncode(t *testing.T, imgStr string) {
 	// Complain if s1 and s2 are different.
 	if s1 != s2 {
 		t.Fatalf("Decoding and re-encoding changed the image")
+	}
+}
+
+func TestGetNextByteAsRune(t *testing.T) {
+	r := bufio.NewReader(strings.NewReader("123"))
+
+	nr := newNetpbmReader(r)
+
+	rn := nr.GetNextByteAsRune()
+	if nr.err != nil {
+		t.Fatalf("unexpected error: %s", nr.err)
+	}
+	if rn != '1' {
+		t.Fatalf("wrong output: %c, expected '1'", rn)
+	}
+}
+
+func TestGetNextInt(t *testing.T) {
+	type testCase struct {
+		in  string
+		out int
+	}
+
+	testCases := []testCase{
+		testCase{
+			in:  "123",
+			out: 123,
+		},
+		testCase{
+			in:  " 123 ",
+			out: 123,
+		},
+		testCase{
+			in:  "ABC 123",
+			out: 123,
+		},
+	}
+
+	for _, tc := range testCases {
+		r := bufio.NewReader(strings.NewReader(tc.in))
+
+		nr := newNetpbmReader(r)
+
+		n := nr.GetNextInt()
+		if nr.err != nil {
+			t.Fatalf("unexpected error: %s", nr.err)
+		}
+		if n != tc.out {
+			t.Fatalf("wrong int: %d, expected %d", n, tc.out)
+		}
+	}
+}
+
+func TestGetNextString(t *testing.T) {
+	type testCase struct {
+		in  string
+		out string
+	}
+
+	testCases := []testCase{
+		testCase{
+			in:  "abc",
+			out: "abc",
+		},
+		testCase{
+			in:  " abc ",
+			out: "abc",
+		},
+		testCase{
+			in:  "123 abc",
+			out: "abc",
+		},
+		testCase{
+			in:  "abc bcd",
+			out: "abc",
+		},
+		testCase{
+			in:  "a_b_c",
+			out: "a_b_c",
+		},
+	}
+
+	for _, tc := range testCases {
+		r := bufio.NewReader(strings.NewReader(tc.in))
+
+		nr := newNetpbmReader(r)
+
+		s := nr.GetNextString()
+		if nr.err != nil {
+			t.Fatalf("unexpected error: %s", nr.err)
+		}
+		if s != tc.out {
+			t.Fatalf("wrong output: %s, expected %s", s, tc.out)
+		}
 	}
 }
