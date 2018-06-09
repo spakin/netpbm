@@ -39,20 +39,20 @@ func NewBW(r image.Rectangle) *BW {
 
 // PromoteToGrayM generates an 8-bit grayscale image that looks identical to
 // the given black-and-white image.  It takes as input a maximum channel value.
-func (bw *BW) PromoteToGrayM(m uint8) *GrayM {
-	gray := NewGrayM(bw.Bounds(), m)
-	for i, p := range bw.Pix {
-		gray.Pix[i] = (1 - p) * m // PBM defines 0=white, 1=black.
+func (p *BW) PromoteToGrayM(m uint8) *GrayM {
+	gray := NewGrayM(p.Bounds(), m)
+	for i, bw := range p.Pix {
+		gray.Pix[i] = (1 - bw) * m // PBM defines 0=white, 1=black.
 	}
 	return gray
 }
 
 // PromoteToGrayM32 generates an 16-bit grayscale image that looks identical to
 // the given black-and-white image.  It takes as input a maximum channel value.
-func (bw *BW) PromoteToGrayM32(m uint16) *GrayM32 {
-	gray := NewGrayM32(bw.Bounds(), m)
-	for i, p := range bw.Pix {
-		g := uint16(1-p) * m // PBM defines 0=white, 1=black.
+func (p *BW) PromoteToGrayM32(m uint16) *GrayM32 {
+	gray := NewGrayM32(p.Bounds(), m)
+	for i, bw := range p.Pix {
+		g := uint16(1-bw) * m // PBM defines 0=white, 1=black.
 		gray.Pix[i*2+0] = uint8(g >> 8)
 		gray.Pix[i*2+1] = uint8(g)
 	}
@@ -218,39 +218,38 @@ func encodeBWData(w io.Writer, img image.Image, opts *EncodeOptions) error {
 		close(samples)
 	}()
 
-	// In the foreground, consume index values (either 0 or 1) and write
-	// them to the image file as individual bits.
+	// In the foreground, consume index values (either 0 or 1) and
+	// write them to the image file as individual bits.  Pack 8
+	// bits to a byte, pad each row, and output.
 	if opts.Plain {
 		return writePlainData(w, samples)
-	} else {
-		// Pack 8 bits to a byte, pad each row, and output.
-		wb, ok := w.(*bufio.Writer)
-		if !ok {
-			wb = bufio.NewWriter(w)
-		}
-		var b byte      // Next byte to write
-		var bLen uint   // Valid bits in b
-		var rowBits int // Bits written to the current row
-		for s := range samples {
-			b = b<<1 | byte(s)
-			bLen++
-			rowBits++
-			if rowBits == width {
-				// Pad the last byte in the row.
-				b <<= 8 - bLen
-				bLen = 8
-				rowBits = 0
-			}
-			if bLen == 8 {
-				// Write a full byte to the output.
-				if err := wb.WriteByte(b); err != nil {
-					return err
-				}
-				b = 0
-				bLen = 0
-			}
-		}
-		wb.Flush()
 	}
+	wb, ok := w.(*bufio.Writer)
+	if !ok {
+		wb = bufio.NewWriter(w)
+	}
+	var b byte      // Next byte to write
+	var bLen uint   // Valid bits in b
+	var rowBits int // Bits written to the current row
+	for s := range samples {
+		b = b<<1 | byte(s)
+		bLen++
+		rowBits++
+		if rowBits == width {
+			// Pad the last byte in the row.
+			b <<= 8 - bLen
+			bLen = 8
+			rowBits = 0
+		}
+		if bLen == 8 {
+			// Write a full byte to the output.
+			if err := wb.WriteByte(b); err != nil {
+				return err
+			}
+			b = 0
+			bLen = 0
+		}
+	}
+	wb.Flush()
 	return nil
 }

@@ -89,15 +89,15 @@ func TestGetNextInt(t *testing.T) {
 	}
 
 	testCases := []testCase{
-		testCase{
+		{
 			in:  "123",
 			out: 123,
 		},
-		testCase{
+		{
 			in:  " 123 ",
 			out: 123,
 		},
-		testCase{
+		{
 			in:  "ABC 123",
 			out: 123,
 		},
@@ -125,23 +125,23 @@ func TestGetNextString(t *testing.T) {
 	}
 
 	testCases := []testCase{
-		testCase{
+		{
 			in:  "abc",
 			out: "abc",
 		},
-		testCase{
+		{
 			in:  " abc ",
 			out: "abc",
 		},
-		testCase{
+		{
 			in:  "123 abc",
 			out: "abc",
 		},
-		testCase{
+		{
 			in:  "abc bcd",
 			out: "abc",
 		},
-		testCase{
+		{
 			in:  "a_b_c",
 			out: "a_b_c",
 		},

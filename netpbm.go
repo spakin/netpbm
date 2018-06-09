@@ -129,7 +129,7 @@ type netpbmHeader struct {
 	Magic     string // Two-character magic value (e.g., "P6" for PPM)
 	Width     int    // Image width in pixels
 	Height    int    // Image height in pixels
-	Depth     int    // Image pixel depth in bites
+	Depth     int    // Image pixel depth in bytes
 	Maxval    int    // Maximum channel value (0-65535)
 	TupleType string // Image Tuple type (RGB_ALPHA, etc)
 }
@@ -384,8 +384,8 @@ type EncodeOptions struct {
 
 // Encode writes an arbitrary image in any of the Netpbm formats.  If opts is
 // nil, Encode will default to matching the image format if the image is a
-// Netpbm image or producing a raw PPM file with no header comment and a
-// maximum color-channel value of 255 for any other image type.
+// Netpbm image or producing a PAM file with no header comment and a maximum
+// color-channel value of 255 for any other image type.
 func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	var o EncodeOptions
 	if opts == nil {

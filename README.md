@@ -50,13 +50,6 @@ will enable [`image.Decode`](https://golang.org/pkg/image/#Decode) to import Net
 
 Various package-specific functions, types, interfaces, and methods are available only with a normal (not "`_`") `import`.  A normal `import` is needed both to export Netpbm images and to exert more precise control over the Netpbm variants that are allowed to be imported.  See the [`netpbm` API documentation](http://godoc.org/github.com/spakin/netpbm) for details.
 
-Copyright and License
----------------------
-
-Copyright &copy; 2015 Scott Pakin
-
-The `netpbm` and `netpbm/npcolor` packages are released under the [BSD 3-Clause License](http://opensource.org/licenses/BSD-3-Clause).  Informally, this means you can do whatever you want with the code as long as you give me (Scott Pakin) credit for writing the original version.
-
 Author
 ------
 

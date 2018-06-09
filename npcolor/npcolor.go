@@ -2,23 +2,32 @@
 
 Package npcolor implements the color types and models used by Netpbm.
 
-RGBM and RGBM64 are analogous to the color package's RGBA and RGBA64
-in that they represent, respectively, colors with 8 bits and 16 bits
-per color channel.  While color.RGBA and color.RGBA64 store red,
+RGBAM and RGBAM64 are analogous to the color package's RGBA and RGBA64
+in that they represent, respectively, colors with 8 bits and 16 bits per
+color channel.  They additionally store a maximum channel value.
+Consequently, while a color.RGBA has a hard-wired upper bound of 255 per
+color channel, npcolor.RGBAM supports any upper bound from 1–255.
+Likewise, while a color.RGBA64 has a hard-wired upper bound of 65,535
+per color channel, npcolor.RGBAM64 supports any upper bound from
+1–65,535.
+
+RGBM and RGBM64 are also analogous to the color package's RGBA and
+RGBA64 in that they represent, respectively, colors with 8 bits and 16
+bits per color channel.  While color.RGBA and color.RGBA64 store red,
 green, blue, and alpha channels, npcolor.RGBM and npcolor.RGBM64 lack
-alpha channels.  Instead, they store a maximum channel value.
-Consequently, while a color.RGBA has a hard-wired upper bound of 255
-per color channel, npcolor.RGBM supports any upper bound from 1-255.
+alpha channels.  However, they store a maximum channel value.
+Consequently, while a color.RGBA has a hard-wired upper bound of 255 per
+color channel, npcolor.RGBM supports any upper bound from 1–255.
 Likewise, while a color.RGBA64 has a hard-wired upper bound of 65,535
 per color channel, npcolor.RGBM64 supports any upper bound from
-1-65,535.
+1–65,535.
 
 GrayM and GrayM32 are analogous to the color package's Gray and Gray16
 in that they represent, respectively, 8-bit and 16-bit grayscale
 values.  However, while a color.Gray value has a hard-wired upper
-bound of 255, npcolor.GrayM supports any upper bound from 1-255.
+bound of 255, npcolor.GrayM supports any upper bound from 1–255.
 Likewise, while a color.Gray16 value has a hard-wired upper bound of
-65,535, npcolor.GrayM32 supports any upper bound from 1-65,535.
+65,535, npcolor.GrayM32 supports any upper bound from 1–65,535.
 
 */
 package npcolor
@@ -90,8 +99,9 @@ func (model GrayM32Model) Convert(c color.Color) color.Color {
 }
 
 // RGBM represents a 24-bit color and the value used for 100% of a color
-// channel.  Because RGBM does not support alpha channels it does make sense to
-// describe it as either "alpha-premultiplied" or "non-alpha-premultiplied".
+// channel.  Because RGBM does not support alpha channels it does not make
+// sense to describe it as either "alpha-premultiplied" or
+// "non-alpha-premultiplied".
 type RGBM struct {
 	R, G, B, M uint8
 }
@@ -160,6 +170,8 @@ func (model RGBM64Model) Convert(c color.Color) color.Color {
 	return RGBM64{R: uint16(r), G: uint16(g), B: uint16(b), M: uint16(m)}
 }
 
+// RGBAM represents a 32-bit color and the value used for 100% of a color
+// channel.
 type RGBAM struct {
 	R, G, B, A, M uint8
 }

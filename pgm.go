@@ -116,12 +116,12 @@ func (p *GrayM) Format() Format {
 
 // PromoteToRGBM generates an 8-bit color image that looks identical to
 // the given grayscale image.
-func (g *GrayM) PromoteToRGBM() *RGBM {
-	rgb := NewRGBM(g.Bounds(), g.Model.M)
-	for i, p := range g.Pix {
-		rgb.Pix[i*3+0] = p
-		rgb.Pix[i*3+1] = p
-		rgb.Pix[i*3+2] = p
+func (p *GrayM) PromoteToRGBM() *RGBM {
+	rgb := NewRGBM(p.Bounds(), p.Model.M)
+	for i, g := range p.Pix {
+		rgb.Pix[i*3+0] = g
+		rgb.Pix[i*3+1] = g
+		rgb.Pix[i*3+2] = g
 	}
 	return rgb
 }
@@ -243,14 +243,14 @@ func (p *GrayM32) Format() Format {
 
 // PromoteToRGBM64 generates a 16-bit color image that looks identical to
 // the given grayscale image.
-func (g *GrayM32) PromoteToRGBM64() *RGBM64 {
-	rgb := NewRGBM64(g.Bounds(), g.Model.M)
-	for i, p := range g.Pix {
+func (p *GrayM32) PromoteToRGBM64() *RGBM64 {
+	rgb := NewRGBM64(p.Bounds(), p.Model.M)
+	for i, g := range p.Pix {
 		base := i / 2
 		ofs := i % 2
-		rgb.Pix[base*6+ofs+0] = p
-		rgb.Pix[base*6+ofs+2] = p
-		rgb.Pix[base*6+ofs+4] = p
+		rgb.Pix[base*6+ofs+0] = g
+		rgb.Pix[base*6+ofs+2] = g
+		rgb.Pix[base*6+ofs+4] = g
 	}
 	return rgb
 }
@@ -436,9 +436,8 @@ func encodePGM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	// Write the PGM data.
 	if opts.MaxValue < 256 {
 		return encodeGrayData(w, img, opts)
-	} else {
-		return encodeGray32Data(w, img, opts)
 	}
+	return encodeGray32Data(w, img, opts)
 }
 
 // encodeGrayData writes image data as 8-bit samples.
@@ -462,9 +461,8 @@ func encodeGrayData(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	// image file.
 	if opts.Plain {
 		return writePlainData(w, samples)
-	} else {
-		return writeRawData(w, samples, 1)
 	}
+	return writeRawData(w, samples, 1)
 }
 
 // encodeGray32Data writes image data as 16-bit samples.
@@ -488,7 +486,6 @@ func encodeGray32Data(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	// image file.
 	if opts.Plain {
 		return writePlainData(w, samples)
-	} else {
-		return writeRawData(w, samples, 2)
 	}
+	return writeRawData(w, samples, 2)
 }

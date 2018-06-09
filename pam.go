@@ -436,9 +436,8 @@ func encodePAM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	// Write the PPM data.
 	if opts.MaxValue < 256 {
 		return encodeRGBAData(w, img, opts)
-	} else {
-		return encodeRGBA64Data(w, img, opts)
 	}
+	return encodeRGBA64Data(w, img, opts)
 }
 
 // encodeRGBAData writes image data as 8-bit samples.
@@ -465,9 +464,8 @@ func encodeRGBAData(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	// file.
 	if opts.Plain {
 		return writePlainData(w, samples)
-	} else {
-		return writeRawData(w, samples, 1)
 	}
+	return writeRawData(w, samples, 1)
 }
 
 // encodeRGBA64Data writes image data as 16-bit samples.
@@ -494,7 +492,6 @@ func encodeRGBA64Data(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	// file.
 	if opts.Plain {
 		return writePlainData(w, samples)
-	} else {
-		return writeRawData(w, samples, 2)
 	}
+	return writeRawData(w, samples, 2)
 }

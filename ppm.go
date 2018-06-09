@@ -432,9 +432,8 @@ func encodePPM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	// Write the PPM data.
 	if opts.MaxValue < 256 {
 		return encodeRGBData(w, img, opts)
-	} else {
-		return encodeRGB64Data(w, img, opts)
 	}
+	return encodeRGB64Data(w, img, opts)
 }
 
 // encodeRGBData writes image data as 8-bit samples.
@@ -460,9 +459,8 @@ func encodeRGBData(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	// file.
 	if opts.Plain {
 		return writePlainData(w, samples)
-	} else {
-		return writeRawData(w, samples, 1)
 	}
+	return writeRawData(w, samples, 1)
 }
 
 // encodeRGB64Data writes image data as 16-bit samples.
@@ -488,7 +486,6 @@ func encodeRGB64Data(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	// file.
 	if opts.Plain {
 		return writePlainData(w, samples)
-	} else {
-		return writeRawData(w, samples, 2)
 	}
+	return writeRawData(w, samples, 2)
 }
