@@ -1,6 +1,8 @@
 netpbm
 ======
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/spakin/netpbm)](https://goreportcard.com/report/github.com/spakin/netpbm)[![GoDoc](https://godoc.org/github.com/spakin/netpbm?status.svg)](https://godoc.org/github.com/spakin/netpbm)
+
 Introduction
 ------------
 
