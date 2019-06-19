@@ -100,6 +100,28 @@ func TestNetpbmEncodePBM(t *testing.T) {
 	repeatDecodeEncode(t, pbmRaw)
 }
 
+// TestDecodePGMEncodePBM confirms that a PGM file can be re-encoded as PBM.
+func TestDecodePGMEncodePBM(t *testing.T) {
+	var w bytes.Buffer
+	img := imageFromString(t, pgmRaw, PGM)
+	opts := &EncodeOptions{Format: PBM}
+	err := Encode(&w, img, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestDecodePPMEncodePBM confirms that a PPM file can be re-encoded as PBM.
+func TestDecodePPMEncodePBM(t *testing.T) {
+	var w bytes.Buffer
+	img := imageFromString(t, ppmRaw, PPM)
+	opts := &EncodeOptions{Format: PBM}
+	err := Encode(&w, img, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 // TestDecodePlainPBMConfig determines if image.DecodeConfig can decode the
 // configuration of a plain PBM file.
 func TestDecodePlainPBMConfig(t *testing.T) {

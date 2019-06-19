@@ -385,30 +385,37 @@ type EncodeOptions struct {
 // Encode writes an arbitrary image in any of the Netpbm formats.  If opts is
 // nil, Encode will default to matching the image format if the image is a
 // Netpbm image or producing a PAM file with no header comment and a maximum
-// color-channel value of 255 for any other image type.
+// color-channel value of 255 for any other image type.  If opts is non-nil but
+// its MaxValue field is 0, use the image's MaxValue if img is a Netpbm image
+// or 255 if not.
 func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
+	// Copy everything from opts to o if opts was provided.  Otherwise,
+	// start o with all zero values plus an intelligently selected Netpbm
+	// format.
 	var o EncodeOptions
 	if opts == nil {
-		// Select some reasonable default options.
 		switch img := img.(type) {
 		case Image:
-			o = EncodeOptions{
-				Format:   img.Format(),
-				MaxValue: img.MaxValue(),
-			}
+			o.Format = img.Format()
 		default:
-			o = EncodeOptions{
-				Format:   PAM,
-				MaxValue: 255,
-			}
+			o.Format = PAM
 		}
 	} else {
-		// Ensure the provided options are sensible.
 		o = *opts
-		if o.MaxValue < 0 {
-			return errors.New("MaxValue must be greater than 0")
+	}
+
+	// Regardless of how o was initialized above, if MaxValue is 0, replace
+	// it with an intelligently selected maximum value.
+	if o.MaxValue == 0 {
+		switch img := img.(type) {
+		case Image:
+			o.MaxValue = img.MaxValue()
+		default:
+			o.MaxValue = 255
 		}
 	}
+
+	// Encode the image using the specified format and options.
 	switch o.Format {
 	case PPM:
 		return encodePPM(w, img, &o)
