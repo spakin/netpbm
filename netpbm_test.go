@@ -45,8 +45,8 @@ func imageFromString(t *testing.T, imgStr string, iFmt Format) image.Image {
 
 // repeatDecodeEncode confirms that encoding and decoding do not alter a NetPBM
 // image.
-func repeatDecodeEncode(t *testing.T, imgStr string) {
-	// Decode a raw PBM image.
+func repeatDecodeEncode(t *testing.T, imgStr string, dOpts *DecodeOptions, eOpts *EncodeOptions) {
+	// Decode a raw NetPBM image.
 	r1 := flate.NewReader(bytes.NewBufferString(imgStr))
 	img, _, err := image.Decode(r1)
 	r1.Close()
@@ -56,21 +56,21 @@ func repeatDecodeEncode(t *testing.T, imgStr string) {
 
 	// Encode the image to w1.
 	var w1 bytes.Buffer
-	err = Encode(&w1, img, nil)
+	err = Encode(&w1, img, eOpts)
 	if err != nil {
 		t.Fatal(err)
 	}
 	s1 := w1.String()
 
 	// Decode the image from w1.
-	img, err = Decode(&w1, nil)
+	img, err = Decode(&w1, dOpts)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Encode the image to w2.
 	var w2 bytes.Buffer
-	err = Encode(&w2, img, nil)
+	err = Encode(&w2, img, eOpts)
 	if err != nil {
 		t.Fatal(err)
 	}

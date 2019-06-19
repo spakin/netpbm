@@ -97,7 +97,15 @@ func TestNetpbmDecodeRawPBMOpts(t *testing.T) {
 // TestNetpbmEncodePBM confirms that encoding and decoding do not alter a raw
 // PBM file.
 func TestNetpbmEncodePBM(t *testing.T) {
-	repeatDecodeEncode(t, pbmRaw)
+	repeatDecodeEncode(t, pbmRaw, nil, nil)
+}
+
+// TestNetppmEncodePBMAsPNM confirms that encoding and decoding do not alter a
+// raw PBM file when treated as PNM.
+func TestNetppmEncodePBMAsPNM(t *testing.T) {
+	dOpts := &DecodeOptions{Target: PNM}
+	eOpts := &EncodeOptions{Format: PNM}
+	repeatDecodeEncode(t, pbmRaw, dOpts, eOpts)
 }
 
 // TestDecodePGMEncodePBM confirms that a PGM file can be re-encoded as PBM.
@@ -213,5 +221,13 @@ func TestNetpbmDecodePlainPBMOpts(t *testing.T) {
 // TestNetpbmEncodePlainPBM confirms that encoding and decoding do not alter a
 // plain PBM file.
 func TestNetpbmEncodePlainPBM(t *testing.T) {
-	repeatDecodeEncode(t, pbmPlain)
+	repeatDecodeEncode(t, pbmPlain, nil, nil)
+}
+
+// TestNetppmEncodePlainPBMAsPNM confirms that encoding and decoding do not
+// alter a plain PBM file when treated as PNM.
+func TestNetppmEncodePlainPBMAsPNM(t *testing.T) {
+	dOpts := &DecodeOptions{Target: PNM}
+	eOpts := &EncodeOptions{Format: PNM}
+	repeatDecodeEncode(t, pbmPlain, dOpts, eOpts)
 }
