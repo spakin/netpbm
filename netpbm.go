@@ -126,8 +126,8 @@ func (nr *netpbmReader) GetNextString() string {
 }
 
 // GetIntsAndComments returns n integers and a list of comments encountered
-// along the way.  Comments include the initial "#" but not the final carriage
-// return and/or line feed.
+// along the way.  Comments discard the initial "#" and up to one subsequent
+// whitespace character as well as the final carriage return and/or line feed.
 func (nr *netpbmReader) GetIntsAndComments(n int) ([]int, []string, error) {
 	// Initialize a state machine.
 	num := 0                         // Current number
@@ -156,7 +156,6 @@ func (nr *netpbmReader) GetIntsAndComments(n int) ([]int, []string, error) {
 			} else if c == '#' {
 				state = InComment
 				prevState = InSpace
-				cmt = append(cmt[:0], c)
 			} else if c == 0 {
 				return nil, nil, errors.New("Unexpected EOF in Netpbm header")
 			} else {
@@ -177,7 +176,6 @@ func (nr *netpbmReader) GetIntsAndComments(n int) ([]int, []string, error) {
 			} else if c == '#' {
 				state = InComment
 				prevState = InDigit
-				cmt = append(cmt[:0], c)
 			} else if c == 0 {
 				return nil, nil, errors.New("Unexpected EOF in Netpbm header")
 			} else {
@@ -185,11 +183,16 @@ func (nr *netpbmReader) GetIntsAndComments(n int) ([]int, []string, error) {
 			}
 
 		case InComment:
-			// Append to the current comment.
+			// Append to the current comment until we reach the end
+			// of the line.
 			for c = nr.GetNextByteAsRune(); c != '\n' && c != '\r'; c = nr.GetNextByteAsRune() {
 				cmt = append(cmt, c)
 			}
+			if len(cmt) > 0 && unicode.IsSpace(cmt[0]) {
+				cmt = cmt[1:]
+			}
 			comments = append(comments, string(cmt))
+			cmt = cmt[:0]
 			state = prevState
 			prevState = InComment
 

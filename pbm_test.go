@@ -130,6 +130,17 @@ func TestDecodePPMEncodePBM(t *testing.T) {
 	}
 }
 
+// TestDecodePBMComments confirms that we can decode a PBM file
+// containing comments.
+func TestDecodePBMComments(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pbmRawComments))
+	defer r.Close()
+	_, err := Decode(r, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 // TestDecodePlainPBMConfig determines if image.DecodeConfig can decode the
 // configuration of a plain PBM file.
 func TestDecodePlainPBMConfig(t *testing.T) {
