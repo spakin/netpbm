@@ -93,6 +93,7 @@ func (nr *netpbmReader) GetNextInt() int {
 	return value
 }
 
+// GetNextString returns the next string from the Netpbm file.
 func (nr *netpbmReader) GetNextString() string {
 	var c rune
 	for nr.err == nil && !unicode.IsLetter(c) {
@@ -124,14 +125,90 @@ func (nr *netpbmReader) GetNextString() string {
 	return sb.String()
 }
 
+// GetIntsAndComments returns n integers and a list of comments encountered
+// along the way.  Comments include the initial "#" but not the final carriage
+// return and/or line feed.
+func (nr *netpbmReader) GetIntsAndComments(n int) ([]int, []string, error) {
+	// Initialize a state machine.
+	num := 0                         // Current number
+	numbers := make([]int, 0, n)     // All numbers
+	cmt := make([]rune, 0, 100)      // Current comment
+	comments := make([]string, 0, 1) // All strings
+	const (
+		InSpace = iota
+		InDigit
+		InComment
+	)
+	state := InSpace  // Current state
+	var prevState int // Previous state (restored after a comment)
+
+	// Process one rune at a time.
+	var c rune
+	for {
+		switch state {
+		case InSpace:
+			// Skip spaces.
+			for c = nr.GetNextByteAsRune(); unicode.IsSpace(c); c = nr.GetNextByteAsRune() {
+			}
+			if c >= '0' && c <= '9' {
+				state = InDigit
+				num = int(c - '0')
+			} else if c == '#' {
+				state = InComment
+				prevState = InSpace
+				cmt = append(cmt[:0], c)
+			} else if c == 0 {
+				return nil, nil, errors.New("Unexpected EOF in Netpbm header")
+			} else {
+				return nil, nil, fmt.Errorf("Unexpected header character %q", c)
+			}
+
+		case InDigit:
+			// Read a base-10 number.
+			for c = nr.GetNextByteAsRune(); c >= '0' && c <= '9'; c = nr.GetNextByteAsRune() {
+				num = num*10 + int(c-'0')
+			}
+			if unicode.IsSpace(c) {
+				state = InSpace
+				numbers = append(numbers, num)
+				if len(numbers) == n {
+					return numbers, comments, nil
+				}
+			} else if c == '#' {
+				state = InComment
+				prevState = InDigit
+				cmt = append(cmt[:0], c)
+			} else if c == 0 {
+				return nil, nil, errors.New("Unexpected EOF in Netpbm header")
+			} else {
+				return nil, nil, fmt.Errorf("Unexpected header character %q", c)
+			}
+
+		case InComment:
+			// Append to the current comment.
+			for c = nr.GetNextByteAsRune(); c != '\n' && c != '\r'; c = nr.GetNextByteAsRune() {
+				cmt = append(cmt, c)
+			}
+			comments = append(comments, string(cmt))
+			state = prevState
+			prevState = InComment
+
+		default:
+			break
+		}
+	}
+	return nil, nil, errors.New("Unexpected EOF in Netpbm header")
+}
+
 // A netpbmHeader encapsulates the components of an image header.
 type netpbmHeader struct {
-	Magic     string // Two-character magic value (e.g., "P6" for PPM)
-	Width     int    // Image width in pixels
-	Height    int    // Image height in pixels
-	Depth     int    // Image pixel depth in bytes
-	Maxval    int    // Maximum channel value (0-65535)
-	TupleType string // Image Tuple type (RGB_ALPHA, etc)
+	Magic     string   // Two-character magic value (e.g., "P6" for PPM)
+	Width     int      // Image width in pixels
+	Height    int      // Image height in pixels
+	Depth     int      // Image pixel depth in bytes
+	Maxval    int      // Maximum channel value (0-65535)
+	TupleType string   // Image Tuple type (RGB_ALPHA, etc)
+	Comments  []string // Aggregated list of comment lines
 }
 
 // GetNetpbmHeader parses the entire header (PBM, PGM, or PPM; raw or
@@ -153,20 +230,30 @@ func (nr *netpbmReader) GetNetpbmHeader() (netpbmHeader, bool) {
 	}
 	header.Magic = string(rune1) + string(rune2)
 
-	// Read the width and height.
-	header.Width = nr.GetNextInt()
-	header.Height = nr.GetNextInt()
-
 	// PBM files (raw or plain) don't specify a maximum channel.  All other
 	// formats do.
 	switch header.Magic {
 	case "P1", "P4":
 		header.Maxval = 1
+		nums, comments, err := nr.GetIntsAndComments(2)
+		if err != nil {
+			return netpbmHeader{}, false
+		}
+		header.Width = nums[0]
+		header.Height = nums[1]
+		header.Comments = comments
+
 	default:
-		header.Maxval = nr.GetNextInt()
+		nums, comments, err := nr.GetIntsAndComments(3)
+		if err != nil {
+			return netpbmHeader{}, false
+		}
+		header.Width = nums[0]
+		header.Height = nums[1]
+		header.Maxval = nums[2]
+		header.Comments = comments
 	}
-	if nr.Err() != nil || !unicode.IsSpace(nr.GetNextByteAsRune()) ||
-		header.Maxval < 1 || header.Maxval > 65535 {
+	if nr.Err() != nil || header.Maxval < 1 || header.Maxval > 65535 {
 		return netpbmHeader{}, false
 	}
 
