@@ -68,7 +68,7 @@ func ExampleEncode() {
 		Format:   img.Format(),   // Original format
 		MaxValue: img.MaxValue(), // Original maximum value
 		Plain:    true,           // ASCII output to clarify output
-		Comment:  "Sample PPM file",
+		Comments: []string{"Sample PPM file"},
 	})
 	if err != nil {
 		panic(err)

@@ -424,8 +424,10 @@ func encodePGM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	} else {
 		fmt.Fprintln(w, "P5")
 	}
-	if opts.Comment != "" {
-		fmt.Fprintf(w, "# %s\n", strings.Replace(opts.Comment, "\n", "# ", -1))
+	for _, cmt := range opts.Comments {
+		cmt = strings.ReplaceAll(cmt, "\n", " ")
+		cmt = strings.ReplaceAll(cmt, "\r", " ")
+		fmt.Fprintf(w, "# %s\n", cmt)
 	}
 	rect := img.Bounds()
 	width := rect.Max.X - rect.Min.X

@@ -466,10 +466,10 @@ func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
 
 // EncodeOptions represents a list of options for writing a Netpbm file.
 type EncodeOptions struct {
-	Format   Format // Netpbm format
-	MaxValue uint16 // Maximum value for each color channel (ignored for PBM)
-	Plain    bool   // true="plain" (ASCII); false="raw" (binary)
-	Comment  string // Header comment
+	Format   Format   // Netpbm format
+	MaxValue uint16   // Maximum value for each color channel (ignored for PBM)
+	Plain    bool     // true="plain" (ASCII); false="raw" (binary)
+	Comments []string // Header comments, with no leading "#" or trailing newlines
 }
 
 // Encode writes an arbitrary image in any of the Netpbm formats.  Given an
