@@ -59,9 +59,10 @@ func (p *BW) PromoteToGrayM32(m uint16) *GrayM32 {
 	return gray
 }
 
-// decodeConfigPBM reads and parses a PBM header, either "raw" (binary) or
-// "plain" (ASCII).
-func decodeConfigPBM(r io.Reader) (image.Config, error) {
+// decodeConfigPBMWithComments reads and parses a PBM header, either "raw"
+// (binary) or "plain" (ASCII).  Unlike decodeConfigPBM, it also returns any
+// comments appearing in the file.
+func decodeConfigPBMWithComments(r io.Reader) (image.Config, []string, error) {
 	// We really want a bufio.Reader.  If we were given one, use it.  If
 	// not, create a new one.
 	br, ok := r.(*bufio.Reader)
@@ -77,7 +78,7 @@ func decodeConfigPBM(r io.Reader) (image.Config, error) {
 		if err == nil {
 			err = errors.New("Invalid PBM header")
 		}
-		return image.Config{}, err
+		return image.Config{}, nil, err
 	}
 
 	// Store the image configuration.
@@ -90,16 +91,24 @@ func decodeConfigPBM(r io.Reader) (image.Config, error) {
 	colorMap[0] = color.RGBA{255, 255, 255, 255}
 	colorMap[1] = color.RGBA{0, 0, 0, 255}
 	cfg.ColorModel = colorMap
-	return cfg, nil
+	return cfg, header.Comments, nil
 }
 
-// decodePBM reads a complete "raw" (binary) PBM image.
-func decodePBM(r io.Reader) (image.Image, error) {
+// decodeConfigPBM reads and parses a PBM header, either "raw"
+// (binary) or "plain" (ASCII).
+func decodeConfigPBM(r io.Reader) (image.Config, error) {
+	img, _, err := decodeConfigPBMWithComments(r)
+	return img, err
+}
+
+// decodePBMWithComments reads a complete "raw" (binary) PBM image.  Unlike
+// decodePBM, it also returns any comments appearing in the file.
+func decodePBMWithComments(r io.Reader) (image.Image, []string, error) {
 	// Read the image header, and use it to prepare a B&W image.
 	br := bufio.NewReader(r)
-	config, err := decodeConfigPBM(br)
+	config, comments, err := decodeConfigPBMWithComments(br)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	img := NewBW(image.Rect(0, 0, config.Width, config.Height))
 
@@ -113,7 +122,7 @@ ReadLoop:
 		var nRead int
 		nRead, err = nr.Read(buf)
 		if nRead == 0 && err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		for _, oneByte := range buf[:nRead] {
 			for i := 7; i >= 0; i-- {
@@ -131,29 +140,36 @@ ReadLoop:
 			}
 		}
 	}
-	return img, nil
+	return img, comments, nil
 }
 
-// decodePBMPlain reads a complete "plain" (ASCII) PBM image.
-func decodePBMPlain(r io.Reader) (image.Image, error) {
+// decodePBM reads a complete "raw" (binary) PBM image.
+func decodePBM(r io.Reader) (image.Image, error) {
+	img, _, err := decodePBMWithComments(r)
+	return img, err
+}
+
+// decodePBMPlainWithComments reads a complete "plain" (ASCII) PBM image.
+// Unlike decodePBMPlain, it also returns any comments appearing in the file.
+func decodePBMPlainWithComments(r io.Reader) (image.Image, []string, error) {
 	// Read the image header, and use it to prepare a B&W image.
 	br := bufio.NewReader(r)
-	config, err := decodeConfigPBM(br)
+	config, comments, err := decodeConfigPBMWithComments(br)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	img := NewBW(image.Rect(0, 0, config.Width, config.Height))
 
 	// Define a simple error handler.
 	nr := newNetpbmReader(br)
-	badness := func() (image.Image, error) {
+	badness := func() (image.Image, []string, error) {
 		// Something went wrong.  Either we have an error code to
 		// explain what or we make up a generic error message.
 		err := nr.Err()
 		if err == nil {
 			err = errors.New("Failed to parse ASCII PBM data")
 		}
-		return img, err
+		return img, nil, err
 	}
 
 	// Read bits (ASCII "0" or "1") until no more remain.
@@ -172,7 +188,13 @@ func decodePBMPlain(r io.Reader) (image.Image, error) {
 			return badness()
 		}
 	}
-	return img, nil
+	return img, comments, nil
+}
+
+// decodePBMPlain reads a complete "plain" (ASCII) PBM image.
+func decodePBMPlain(r io.Reader) (image.Image, error) {
+	img, _, err := decodePBMPlainWithComments(r)
+	return img, err
 }
 
 // Indicate that we can decode both raw and plain PBM files.

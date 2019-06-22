@@ -260,9 +260,10 @@ func NewRGBM64(r image.Rectangle, m uint16) *RGBM64 {
 	return &RGBM64{pix, 6 * w, r, model}
 }
 
-// decodeConfigPPM reads and parses a PPM header, either "raw" (binary) or
-// "plain" (ASCII).
-func decodeConfigPPM(r io.Reader) (image.Config, error) {
+// decodeConfigPPMWithComments reads and parses a PPM header, either "raw"
+// (binary) or "plain" (ASCII).  Unlike decodeConfigPPM, it also returns any
+// comments appearing in the file.
+func decodeConfigPPMWithComments(r io.Reader) (image.Config, []string, error) {
 	// We really want a bufio.Reader.  If we were given one, use it.  If
 	// not, create a new one.
 	br, ok := r.(*bufio.Reader)
@@ -278,7 +279,7 @@ func decodeConfigPPM(r io.Reader) (image.Config, error) {
 		if err == nil {
 			err = errors.New("Invalid PPM header")
 		}
-		return image.Config{}, err
+		return image.Config{}, nil, err
 	}
 
 	// Store and return the image configuration.
@@ -290,16 +291,24 @@ func decodeConfigPPM(r io.Reader) (image.Config, error) {
 	} else {
 		cfg.ColorModel = npcolor.RGBM64Model{M: uint16(header.Maxval)}
 	}
-	return cfg, nil
+	return cfg, header.Comments, nil
 }
 
-// decodePPM reads a complete "raw" (binary) PPM image.
-func decodePPM(r io.Reader) (image.Image, error) {
+// decodeConfigPPM reads and parses a PPM header, either "raw"
+// (binary) or "plain" (ASCII).
+func decodeConfigPPM(r io.Reader) (image.Config, error) {
+	img, _, err := decodeConfigPPMWithComments(r)
+	return img, err
+}
+
+// decodePPMWithComments reads a complete "raw" (binary) PPM image.  Unlike
+// decodePPM, it also returns any comments appearing in the file.
+func decodePPMWithComments(r io.Reader) (image.Image, []string, error) {
 	// Read the image header, and use it to prepare a color image.
 	br := bufio.NewReader(r)
-	config, err := decodeConfigPPM(br)
+	config, comments, err := decodeConfigPPMWithComments(br)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Create either a Color or a Color64 image.
@@ -326,36 +335,43 @@ func decodePPM(r io.Reader) (image.Image, error) {
 	for len(data) > 0 {
 		nRead, err := br.Read(data)
 		if err != nil && err != io.EOF {
-			return img, err
+			return img, nil, err
 		}
 		if nRead == 0 {
-			return img, errors.New("Failed to read binary PPM data")
+			return img, nil, errors.New("Failed to read binary PPM data")
 		}
 		data = data[nRead:]
 	}
-	return img, nil
+	return img, comments, nil
 }
 
-// decodePPMPlain reads a complete "plain" (ASCII) PPM image.
-func decodePPMPlain(r io.Reader) (image.Image, error) {
+// decodePPM reads a complete "raw" (binary) PPM image.
+func decodePPM(r io.Reader) (image.Image, error) {
+	img, _, err := decodePPMWithComments(r)
+	return img, err
+}
+
+// decodePPMPlainWithComments reads a complete "plain" (ASCII) PPM image.
+// Unlike decodePPMPlain, it also returns any comments appearing in the file.
+func decodePPMPlainWithComments(r io.Reader) (image.Image, []string, error) {
 	// Read the image header, and use it to prepare a color image.
 	br := bufio.NewReader(r)
-	config, err := decodeConfigPPM(br)
+	config, comments, err := decodeConfigPPMWithComments(br)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var img image.Image // Image to return
 
 	// Define a simple error handler.
 	nr := newNetpbmReader(br)
-	badness := func() (image.Image, error) {
+	badness := func() (image.Image, []string, error) {
 		// Something went wrong.  Either we have an error code to
 		// explain what or we make up a generic error message.
 		err := nr.Err()
 		if err == nil {
 			err = errors.New("Failed to parse ASCII PPM data")
 		}
-		return img, err
+		return img, nil, err
 	}
 
 	// Create either a Color or a Color64 image.
@@ -403,7 +419,13 @@ func decodePPMPlain(r io.Reader) (image.Image, error) {
 			}
 		}
 	}
-	return img, nil
+	return img, comments, nil
+}
+
+// decodePPMPlain reads a complete "plain" (ASCII) PPM image.
+func decodePPMPlain(r io.Reader) (image.Image, error) {
+	img, _, err := decodePPMPlainWithComments(r)
+	return img, err
 }
 
 // Indicate that we can decode both raw and plain PPM files.
