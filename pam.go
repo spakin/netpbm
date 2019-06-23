@@ -313,6 +313,7 @@ func (nr *netpbmReader) GetPamHeader() (netpbmHeader, bool) {
 	header.Magic = string(rune1) + string(rune2)
 
 	// Process each line in turn.
+ReadLoop:
 	for {
 		// Read a line.
 		kv := nr.GetLineAsKeyValue()
@@ -331,7 +332,7 @@ func (nr *netpbmReader) GetPamHeader() (netpbmHeader, bool) {
 		k, v := kv[0], kv[1]
 		switch k {
 		case "ENDHDR":
-			break
+			break ReadLoop
 		case "HEIGHT":
 			header.Height, err = strconv.Atoi(v)
 		case "WIDTH":

@@ -173,6 +173,7 @@ func (nr *netpbmReader) GetIntsAndComments(n int) ([]int, []string, error) {
 
 	// Process one rune at a time.
 	var c rune
+RuneLoop:
 	for {
 		switch state {
 		case InSpace:
@@ -226,7 +227,7 @@ func (nr *netpbmReader) GetIntsAndComments(n int) ([]int, []string, error) {
 			prevState = InComment
 
 		default:
-			break
+			break RuneLoop
 		}
 	}
 	return nil, nil, errors.New("Unexpected EOF in Netpbm header")
