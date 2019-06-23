@@ -341,9 +341,11 @@ type DecodeOptions struct {
 	PBMMaxValue uint16 // Maximum channel value to use when promoting a PBM image (0=default)
 }
 
-// DecodeConfig returns image metadata without decoding the entire image.  Pass
-// in a bufio.Reader if you intend to read data following the image header.
-func DecodeConfig(r io.Reader) (image.Config, error) {
+// DecodeConfigWithComments returns image metadata without decoding the entire
+// image.  Unlike Decode, it also returns any comments appearing in the file.
+// Pass in a bufio.Reader if you intend to read data following the image
+// header.
+func DecodeConfigWithComments(r io.Reader) (image.Config, []string, error) {
 	// Peek at the file's magic number.
 	rr, ok := r.(*bufio.Reader)
 	if !ok {
@@ -351,35 +353,43 @@ func DecodeConfig(r io.Reader) (image.Config, error) {
 	}
 	magic, err := rr.Peek(2)
 	if err != nil {
-		return image.Config{}, err
+		return image.Config{}, nil, err
 	}
 
 	// Invoke the decode function corresponding to the magic number.
 	if magic[0] != 'P' {
-		return image.Config{}, errors.New("Not a Netpbm image")
+		return image.Config{}, nil, errors.New("Not a Netpbm image")
 	}
 	switch magic[1] {
 	case '1', '4':
 		// PBM
-		return decodeConfigPBM(rr)
+		return decodeConfigPBMWithComments(rr)
 	case '2', '5':
 		// PGM
-		return decodeConfigPGM(rr)
+		return decodeConfigPGMWithComments(rr)
 	case '3', '6':
 		// PPM
-		return decodeConfigPPM(rr)
+		return decodeConfigPPMWithComments(rr)
 	case '7':
 		// PAM
-		return decodeConfigPAM(rr)
+		return decodeConfigPAMWithComments(rr)
 	default:
 		// None of the above
-		return image.Config{}, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
+		return image.Config{}, nil, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
 	}
 }
 
-// Decode reads a Netpbm image from r and returns it as an Image.  Pass in a
-// bufio.Reader if you intend to read data following the image.
-func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
+// DecodeConfig returns image metadata without decoding the entire image.  Pass
+// in a bufio.Reader if you intend to read data following the image header.
+func DecodeConfig(r io.Reader) (image.Config, error) {
+	cfg, _, err := DecodeConfigWithComments(r)
+	return cfg, err
+}
+
+// DecodeWithComments reads a Netpbm image from r and returns it as an Image.
+// Unlike Decode, it also returns any comments appearing in the file.  Pass in
+// a bufio.Reader if you intend to read data following the image.
+func DecodeWithComments(r io.Reader, opts *DecodeOptions) (Image, []string, error) {
 	// Peek at the file's magic number.
 	rr, ok := r.(*bufio.Reader)
 	if !ok {
@@ -387,10 +397,10 @@ func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
 	}
 	magic, err := rr.Peek(2)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if magic[0] != 'P' {
-		return nil, errors.New("Not a Netpbm image")
+		return nil, nil, errors.New("Not a Netpbm image")
 	}
 
 	// Provide default options.
@@ -404,72 +414,73 @@ func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
 	if o.Exact && o.Target == PNM {
 		// PNM isn't its own format so it doesn't make sense to try to
 		// read exactly a PNM file.
-		return nil, errors.New("Exact=true is incompatible with Target=PNM")
+		return nil, nil, errors.New("Exact=true is incompatible with Target=PNM")
 	}
 
 	// Invoke the decode function corresponding to the magic number.
-	var img image.Image // Image to return
+	var img image.Image   // Image to return
+	var comments []string // Comments appearing in the image header
 	switch magic[1] {
 	case '1':
 		// Plain PBM
 		if o.Exact && o.Target != PBM {
-			return nil, errors.New("PBM rejected by Decode options")
+			return nil, nil, errors.New("PBM rejected by Decode options")
 		}
-		img, err = decodePBMPlain(rr)
+		img, comments, err = decodePBMPlainWithComments(rr)
 	case '2':
 		// Plain PGM
 		if o.Exact && o.Target != PGM {
-			return nil, errors.New("PGM rejected by Decode options")
+			return nil, nil, errors.New("PGM rejected by Decode options")
 		}
-		img, err = decodePGMPlain(rr)
+		img, comments, err = decodePGMPlainWithComments(rr)
 	case '3':
 		// Plain PPM
 		if o.Exact && o.Target != PPM {
-			return nil, errors.New("PPM rejected by Decode options")
+			return nil, nil, errors.New("PPM rejected by Decode options")
 		}
-		img, err = decodePPMPlain(rr)
+		img, comments, err = decodePPMPlainWithComments(rr)
 	case '4':
 		// Raw PBM
 		if o.Exact && o.Target != PBM {
-			return nil, errors.New("PBM rejected by Decode options")
+			return nil, nil, errors.New("PBM rejected by Decode options")
 		}
-		img, err = decodePBM(rr)
+		img, comments, err = decodePBMWithComments(rr)
 	case '5':
 		// Raw PGM
 		if o.Exact && o.Target != PGM {
-			return nil, errors.New("PGM rejected by Decode options")
+			return nil, nil, errors.New("PGM rejected by Decode options")
 		}
-		img, err = decodePGM(rr)
+		img, comments, err = decodePGMWithComments(rr)
 	case '6':
 		// Raw PPM
 		if o.Exact && o.Target != PPM {
-			return nil, errors.New("PPM rejected by Decode options")
+			return nil, nil, errors.New("PPM rejected by Decode options")
 		}
-		img, err = decodePPM(rr)
+		img, comments, err = decodePPMWithComments(rr)
 	case '7':
 		// Raw PAM
 		if o.Exact && o.Target != PAM {
-			return nil, errors.New("PAM rejected by Decode options")
+			return nil, nil, errors.New("PAM rejected by Decode options")
 		}
-		img, err = decodePAM(rr)
+		img, comments, err = decodePAMWithComments(rr)
 	default:
 		// None of the above
-		return nil, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
+		return nil, nil, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
 	}
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// A PNM target accepts any of PBM, PGM, or PPM as is.
 	nimg := img.(Image)
 	if o.Target == PNM {
-		return nimg, nil
+		return nimg, comments, nil
 	}
 
 	// If requested, promote the image to a richer format.  We've already
 	// rejected the case of a mismatch when mismatches are forbidden.
 	if nimg.Format() > o.Target {
-		return nil, fmt.Errorf("Cannot demote a %s image to a %s image", nimg.Format(), o.Target)
+		return nil, nil, fmt.Errorf("Cannot demote a %s image to a %s image", nimg.Format(), o.Target)
 	}
 	for nimg.Format() < o.Target {
 		switch nimg.Format() {
@@ -490,7 +501,14 @@ func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
 			panic("Attempted to promote a format other than PBM or PFM")
 		}
 	}
-	return nimg, nil
+	return nimg, comments, nil
+}
+
+// Decode reads a Netpbm image from r and returns it as an Image.  a
+// bufio.Reader if you intend to read data following the image.
+func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
+	img, _, err := DecodeWithComments(r, opts)
+	return img, err
 }
 
 // EncodeOptions represents a list of options for writing a Netpbm file.
