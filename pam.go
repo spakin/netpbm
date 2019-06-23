@@ -11,6 +11,7 @@ import (
 	"unicode"
 
 	"github.com/spakin/netpbm/npcolor"
+	"strconv"
 )
 
 // An RGBAM is an in-memory image whose At method returns npcolor.RGBAM values.
@@ -311,23 +312,49 @@ func (nr *netpbmReader) GetPamHeader() (netpbmHeader, bool) {
 	}
 	header.Magic = string(rune1) + string(rune2)
 
-	// Read the width and height.
-	header.Width = nr.GetNextInt()
-	header.Height = nr.GetNextInt()
-	header.Depth = nr.GetNextInt()
-	header.Maxval = nr.GetNextInt()
+	// Process each line in turn.
+	for {
+		// Read a line.
+		kv := nr.GetLineAsKeyValue()
+		if nr.Err() != nil {
+			return netpbmHeader{}, false
+		}
+		if len(kv) == 0 {
+			continue
+		}
+		if len(kv) == 1 && kv[0] != "ENDHDR" {
+			return netpbmHeader{}, false
+		}
 
-	if fieldName := nr.GetNextString(); fieldName != "TUPLTYPE" {
-		return netpbmHeader{}, false
+		// Parse the line.
+		var err error
+		k, v := kv[0], kv[1]
+		switch k {
+		case "ENDHDR":
+			break
+		case "HEIGHT":
+			header.Height, err = strconv.Atoi(v)
+		case "WIDTH":
+			header.Width, err = strconv.Atoi(v)
+		case "DEPTH":
+			header.Depth, err = strconv.Atoi(v)
+		case "MAXVAL":
+			header.Maxval, err = strconv.Atoi(v)
+		case "TUPLTYPE":
+			if header.TupleType != "" {
+				header.TupleType += " "
+			}
+			header.TupleType += v
+		case "#":
+			header.Comments = append(header.Comments, v)
+		default:
+			return netpbmHeader{}, false
+		}
+		if err != nil {
+			return netpbmHeader{}, false
+		}
 	}
-	header.TupleType = nr.GetNextString()
-
-	if fieldName := nr.GetNextString(); fieldName != "ENDHDR" {
-		return netpbmHeader{}, false
-	}
-
-	if nr.Err() != nil || !unicode.IsSpace(nr.GetNextByteAsRune()) ||
-		header.Maxval < 1 || header.Maxval > 65535 {
+	if header.Maxval < 1 || header.Maxval > 65535 {
 		return netpbmHeader{}, false
 	}
 
@@ -335,9 +362,9 @@ func (nr *netpbmReader) GetPamHeader() (netpbmHeader, bool) {
 	return header, true
 }
 
-// decodeConfigPAM reads and parses a PAM header, either "raw" (binary) or
-// "plain" (ASCII).
-func decodeConfigPAM(r io.Reader) (image.Config, error) {
+// decodeConfigPAMWithComments reads and parses a PAM header.  Unlike
+// decodeConfigPAM, it also returns any comments appearing in the file.
+func decodeConfigPAMWithComments(r io.Reader) (image.Config, []string, error) {
 	// We really want a bufio.Reader.  If we were given one, use it.  If
 	// not, create a new one.
 	br, ok := r.(*bufio.Reader)
@@ -353,7 +380,7 @@ func decodeConfigPAM(r io.Reader) (image.Config, error) {
 		if err == nil {
 			err = errors.New("Invalid PAM header")
 		}
-		return image.Config{}, err
+		return image.Config{}, nil, err
 	}
 
 	// Store and return the image configuration.
@@ -365,16 +392,23 @@ func decodeConfigPAM(r io.Reader) (image.Config, error) {
 	} else {
 		cfg.ColorModel = npcolor.RGBAM64Model{M: uint16(header.Maxval)}
 	}
-	return cfg, nil
+	return cfg, header.Comments, nil
 }
 
-// decodePAM reads a complete "raw" (binary) PAM image.
-func decodePAM(r io.Reader) (image.Image, error) {
+// decodeConfigPAM reads and parses a PAM header.
+func decodeConfigPAM(r io.Reader) (image.Config, error) {
+	img, _, err := decodeConfigPAMWithComments(r)
+	return img, err
+}
+
+// decodePAMWithComments reads a complete PAM image.  Unlike decodePAM, it also
+// returns any comments appearing in the file.
+func decodePAMWithComments(r io.Reader) (image.Image, []string, error) {
 	// Read the image header, and use it to prepare a color image.
 	br := bufio.NewReader(r)
-	config, err := decodeConfigPAM(br)
+	config, comments, err := decodeConfigPAMWithComments(br)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Create either a Color or a Color64 image.
@@ -401,14 +435,20 @@ func decodePAM(r io.Reader) (image.Image, error) {
 	for len(data) > 0 {
 		nRead, err := br.Read(data)
 		if err != nil && err != io.EOF {
-			return img, err
+			return img, nil, err
 		}
 		if nRead == 0 {
-			return img, errors.New("Failed to read binary PPM data")
+			return img, nil, errors.New("Failed to read binary PPM data")
 		}
 		data = data[nRead:]
 	}
-	return img, nil
+	return img, comments, nil
+}
+
+// decodePAM reads a complete PAM image.
+func decodePAM(r io.Reader) (image.Image, error) {
+	img, _, err := decodePAMWithComments(r)
+	return img, err
 }
 
 // Indicate that we can decode PAM files.

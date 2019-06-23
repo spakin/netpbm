@@ -60,6 +60,35 @@ func (nr *netpbmReader) GetNextByteAsRune() rune {
 	return rune(b)
 }
 
+// GetLineAsKeyValue returns the next line, split into a space-separated key
+// and a value or nil on error.  Errors are sticky.
+func (nr *netpbmReader) GetLineAsKeyValue() []string {
+	// Read a line.
+	if nr.err != nil {
+		return nil
+	}
+	var s string
+	s, nr.err = nr.ReadString('\n')
+	if nr.err != nil {
+		return nil
+	}
+
+	// Split the string into a key and a value.  As a special case "#"
+	// counts as a key, and everything following it is a comment.
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	if s[0] == '#' {
+		return []string{"#", strings.TrimSpace(s[1:])}
+	}
+	fs := strings.SplitN(s, " ", 2)
+	if len(fs) == 1 {
+		return []string{fs[0], ""}
+	}
+	return []string{fs[0], strings.TrimSpace(fs[1])}
+}
+
 // GetNextInt returns the next base-10 integer read from a netpbmReader,
 // skipping preceding whitespace and comments.
 func (nr *netpbmReader) GetNextInt() int {
