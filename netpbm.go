@@ -60,6 +60,35 @@ func (nr *netpbmReader) GetNextByteAsRune() rune {
 	return rune(b)
 }
 
+// GetLineAsKeyValue returns the next line, split into a space-separated key
+// and a value or nil on error.  Errors are sticky.
+func (nr *netpbmReader) GetLineAsKeyValue() []string {
+	// Read a line.
+	if nr.err != nil {
+		return nil
+	}
+	var s string
+	s, nr.err = nr.ReadString('\n')
+	if nr.err != nil {
+		return nil
+	}
+
+	// Split the string into a key and a value.  As a special case "#"
+	// counts as a key, and everything following it is a comment.
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	if s[0] == '#' {
+		return []string{"#", strings.TrimSpace(s[1:])}
+	}
+	fs := strings.SplitN(s, " ", 2)
+	if len(fs) == 1 {
+		return []string{fs[0], ""}
+	}
+	return []string{fs[0], strings.TrimSpace(fs[1])}
+}
+
 // GetNextInt returns the next base-10 integer read from a netpbmReader,
 // skipping preceding whitespace and comments.
 func (nr *netpbmReader) GetNextInt() int {
@@ -93,6 +122,7 @@ func (nr *netpbmReader) GetNextInt() int {
 	return value
 }
 
+// GetNextString returns the next string from the Netpbm file.
 func (nr *netpbmReader) GetNextString() string {
 	var c rune
 	for nr.err == nil && !unicode.IsLetter(c) {
@@ -124,14 +154,93 @@ func (nr *netpbmReader) GetNextString() string {
 	return sb.String()
 }
 
+// GetIntsAndComments returns n integers and a list of comments encountered
+// along the way.  Comments discard the initial "#" and up to one subsequent
+// whitespace character as well as the final carriage return and/or line feed.
+func (nr *netpbmReader) GetIntsAndComments(n int) ([]int, []string, error) {
+	// Initialize a state machine.
+	num := 0                         // Current number
+	numbers := make([]int, 0, n)     // All numbers
+	cmt := make([]rune, 0, 100)      // Current comment
+	comments := make([]string, 0, 1) // All strings
+	const (
+		InSpace = iota
+		InDigit
+		InComment
+	)
+	state := InSpace  // Current state
+	var prevState int // Previous state (restored after a comment)
+
+	// Process one rune at a time.
+	var c rune
+	for {
+		switch state {
+		case InSpace:
+			// Skip spaces.
+			for c = nr.GetNextByteAsRune(); unicode.IsSpace(c); c = nr.GetNextByteAsRune() {
+			}
+			if c >= '0' && c <= '9' {
+				state = InDigit
+				num = int(c - '0')
+			} else if c == '#' {
+				state = InComment
+				prevState = InSpace
+			} else if c == 0 {
+				return nil, nil, errors.New("Unexpected EOF in Netpbm header")
+			} else {
+				return nil, nil, fmt.Errorf("Unexpected header character %q", c)
+			}
+
+		case InDigit:
+			// Read a base-10 number.
+			for c = nr.GetNextByteAsRune(); c >= '0' && c <= '9'; c = nr.GetNextByteAsRune() {
+				num = num*10 + int(c-'0')
+			}
+			if unicode.IsSpace(c) {
+				state = InSpace
+				numbers = append(numbers, num)
+				if len(numbers) == n {
+					return numbers, comments, nil
+				}
+			} else if c == '#' {
+				state = InComment
+				prevState = InDigit
+			} else if c == 0 {
+				return nil, nil, errors.New("Unexpected EOF in Netpbm header")
+			} else {
+				return nil, nil, fmt.Errorf("Unexpected header character %q", c)
+			}
+
+		case InComment:
+			// Append to the current comment until we reach the end
+			// of the line.
+			for c = nr.GetNextByteAsRune(); c != '\n' && c != '\r'; c = nr.GetNextByteAsRune() {
+				cmt = append(cmt, c)
+			}
+			if len(cmt) > 0 && unicode.IsSpace(cmt[0]) {
+				cmt = cmt[1:]
+			}
+			comments = append(comments, string(cmt))
+			cmt = cmt[:0]
+			state = prevState
+			prevState = InComment
+
+		default:
+			break
+		}
+	}
+	return nil, nil, errors.New("Unexpected EOF in Netpbm header")
+}
+
 // A netpbmHeader encapsulates the components of an image header.
 type netpbmHeader struct {
-	Magic     string // Two-character magic value (e.g., "P6" for PPM)
-	Width     int    // Image width in pixels
-	Height    int    // Image height in pixels
-	Depth     int    // Image pixel depth in bytes
-	Maxval    int    // Maximum channel value (0-65535)
-	TupleType string // Image Tuple type (RGB_ALPHA, etc)
+	Magic     string   // Two-character magic value (e.g., "P6" for PPM)
+	Width     int      // Image width in pixels
+	Height    int      // Image height in pixels
+	Depth     int      // Image pixel depth in bytes
+	Maxval    int      // Maximum channel value (0-65535)
+	TupleType string   // Image Tuple type (RGB_ALPHA, etc)
+	Comments  []string // Aggregated list of comment lines
 }
 
 // GetNetpbmHeader parses the entire header (PBM, PGM, or PPM; raw or
@@ -153,20 +262,30 @@ func (nr *netpbmReader) GetNetpbmHeader() (netpbmHeader, bool) {
 	}
 	header.Magic = string(rune1) + string(rune2)
 
-	// Read the width and height.
-	header.Width = nr.GetNextInt()
-	header.Height = nr.GetNextInt()
-
 	// PBM files (raw or plain) don't specify a maximum channel.  All other
 	// formats do.
 	switch header.Magic {
 	case "P1", "P4":
 		header.Maxval = 1
+		nums, comments, err := nr.GetIntsAndComments(2)
+		if err != nil {
+			return netpbmHeader{}, false
+		}
+		header.Width = nums[0]
+		header.Height = nums[1]
+		header.Comments = comments
+
 	default:
-		header.Maxval = nr.GetNextInt()
+		nums, comments, err := nr.GetIntsAndComments(3)
+		if err != nil {
+			return netpbmHeader{}, false
+		}
+		header.Width = nums[0]
+		header.Height = nums[1]
+		header.Maxval = nums[2]
+		header.Comments = comments
 	}
-	if nr.Err() != nil || !unicode.IsSpace(nr.GetNextByteAsRune()) ||
-		header.Maxval < 1 || header.Maxval > 65535 {
+	if nr.Err() != nil || header.Maxval < 1 || header.Maxval > 65535 {
 		return netpbmHeader{}, false
 	}
 
@@ -222,9 +341,11 @@ type DecodeOptions struct {
 	PBMMaxValue uint16 // Maximum channel value to use when promoting a PBM image (0=default)
 }
 
-// DecodeConfig returns image metadata without decoding the entire image.  Pass
-// in a bufio.Reader if you intend to read data following the image header.
-func DecodeConfig(r io.Reader) (image.Config, error) {
+// DecodeConfigWithComments returns image metadata without decoding the entire
+// image.  Unlike Decode, it also returns any comments appearing in the file.
+// Pass in a bufio.Reader if you intend to read data following the image
+// header.
+func DecodeConfigWithComments(r io.Reader) (image.Config, []string, error) {
 	// Peek at the file's magic number.
 	rr, ok := r.(*bufio.Reader)
 	if !ok {
@@ -232,35 +353,43 @@ func DecodeConfig(r io.Reader) (image.Config, error) {
 	}
 	magic, err := rr.Peek(2)
 	if err != nil {
-		return image.Config{}, err
+		return image.Config{}, nil, err
 	}
 
 	// Invoke the decode function corresponding to the magic number.
 	if magic[0] != 'P' {
-		return image.Config{}, errors.New("Not a Netpbm image")
+		return image.Config{}, nil, errors.New("Not a Netpbm image")
 	}
 	switch magic[1] {
 	case '1', '4':
 		// PBM
-		return decodeConfigPBM(rr)
+		return decodeConfigPBMWithComments(rr)
 	case '2', '5':
 		// PGM
-		return decodeConfigPGM(rr)
+		return decodeConfigPGMWithComments(rr)
 	case '3', '6':
 		// PPM
-		return decodeConfigPPM(rr)
+		return decodeConfigPPMWithComments(rr)
 	case '7':
 		// PAM
-		return decodeConfigPAM(rr)
+		return decodeConfigPAMWithComments(rr)
 	default:
 		// None of the above
-		return image.Config{}, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
+		return image.Config{}, nil, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
 	}
 }
 
-// Decode reads a Netpbm image from r and returns it as an Image.  Pass in a
-// bufio.Reader if you intend to read data following the image.
-func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
+// DecodeConfig returns image metadata without decoding the entire image.  Pass
+// in a bufio.Reader if you intend to read data following the image header.
+func DecodeConfig(r io.Reader) (image.Config, error) {
+	cfg, _, err := DecodeConfigWithComments(r)
+	return cfg, err
+}
+
+// DecodeWithComments reads a Netpbm image from r and returns it as an Image.
+// Unlike Decode, it also returns any comments appearing in the file.  Pass in
+// a bufio.Reader if you intend to read data following the image.
+func DecodeWithComments(r io.Reader, opts *DecodeOptions) (Image, []string, error) {
 	// Peek at the file's magic number.
 	rr, ok := r.(*bufio.Reader)
 	if !ok {
@@ -268,10 +397,10 @@ func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
 	}
 	magic, err := rr.Peek(2)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if magic[0] != 'P' {
-		return nil, errors.New("Not a Netpbm image")
+		return nil, nil, errors.New("Not a Netpbm image")
 	}
 
 	// Provide default options.
@@ -285,72 +414,73 @@ func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
 	if o.Exact && o.Target == PNM {
 		// PNM isn't its own format so it doesn't make sense to try to
 		// read exactly a PNM file.
-		return nil, errors.New("Exact=true is incompatible with Target=PNM")
+		return nil, nil, errors.New("Exact=true is incompatible with Target=PNM")
 	}
 
 	// Invoke the decode function corresponding to the magic number.
-	var img image.Image // Image to return
+	var img image.Image   // Image to return
+	var comments []string // Comments appearing in the image header
 	switch magic[1] {
 	case '1':
 		// Plain PBM
 		if o.Exact && o.Target != PBM {
-			return nil, errors.New("PBM rejected by Decode options")
+			return nil, nil, errors.New("PBM rejected by Decode options")
 		}
-		img, err = decodePBMPlain(rr)
+		img, comments, err = decodePBMPlainWithComments(rr)
 	case '2':
 		// Plain PGM
 		if o.Exact && o.Target != PGM {
-			return nil, errors.New("PGM rejected by Decode options")
+			return nil, nil, errors.New("PGM rejected by Decode options")
 		}
-		img, err = decodePGMPlain(rr)
+		img, comments, err = decodePGMPlainWithComments(rr)
 	case '3':
 		// Plain PPM
 		if o.Exact && o.Target != PPM {
-			return nil, errors.New("PPM rejected by Decode options")
+			return nil, nil, errors.New("PPM rejected by Decode options")
 		}
-		img, err = decodePPMPlain(rr)
+		img, comments, err = decodePPMPlainWithComments(rr)
 	case '4':
 		// Raw PBM
 		if o.Exact && o.Target != PBM {
-			return nil, errors.New("PBM rejected by Decode options")
+			return nil, nil, errors.New("PBM rejected by Decode options")
 		}
-		img, err = decodePBM(rr)
+		img, comments, err = decodePBMWithComments(rr)
 	case '5':
 		// Raw PGM
 		if o.Exact && o.Target != PGM {
-			return nil, errors.New("PGM rejected by Decode options")
+			return nil, nil, errors.New("PGM rejected by Decode options")
 		}
-		img, err = decodePGM(rr)
+		img, comments, err = decodePGMWithComments(rr)
 	case '6':
 		// Raw PPM
 		if o.Exact && o.Target != PPM {
-			return nil, errors.New("PPM rejected by Decode options")
+			return nil, nil, errors.New("PPM rejected by Decode options")
 		}
-		img, err = decodePPM(rr)
+		img, comments, err = decodePPMWithComments(rr)
 	case '7':
 		// Raw PAM
 		if o.Exact && o.Target != PAM {
-			return nil, errors.New("PAM rejected by Decode options")
+			return nil, nil, errors.New("PAM rejected by Decode options")
 		}
-		img, err = decodePAM(rr)
+		img, comments, err = decodePAMWithComments(rr)
 	default:
 		// None of the above
-		return nil, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
+		return nil, nil, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
 	}
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// A PNM target accepts any of PBM, PGM, or PPM as is.
 	nimg := img.(Image)
 	if o.Target == PNM {
-		return nimg, nil
+		return nimg, comments, nil
 	}
 
 	// If requested, promote the image to a richer format.  We've already
 	// rejected the case of a mismatch when mismatches are forbidden.
 	if nimg.Format() > o.Target {
-		return nil, fmt.Errorf("Cannot demote a %s image to a %s image", nimg.Format(), o.Target)
+		return nil, nil, fmt.Errorf("Cannot demote a %s image to a %s image", nimg.Format(), o.Target)
 	}
 	for nimg.Format() < o.Target {
 		switch nimg.Format() {
@@ -371,15 +501,22 @@ func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
 			panic("Attempted to promote a format other than PBM or PFM")
 		}
 	}
-	return nimg, nil
+	return nimg, comments, nil
+}
+
+// Decode reads a Netpbm image from r and returns it as an Image.  a
+// bufio.Reader if you intend to read data following the image.
+func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
+	img, _, err := DecodeWithComments(r, opts)
+	return img, err
 }
 
 // EncodeOptions represents a list of options for writing a Netpbm file.
 type EncodeOptions struct {
-	Format   Format // Netpbm format
-	MaxValue uint16 // Maximum value for each color channel (ignored for PBM)
-	Plain    bool   // true="plain" (ASCII); false="raw" (binary)
-	Comment  string // Header comment
+	Format   Format   // Netpbm format
+	MaxValue uint16   // Maximum value for each color channel (ignored for PBM)
+	Plain    bool     // true="plain" (ASCII); false="raw" (binary)
+	Comments []string // Header comments, with no leading "#" or trailing newlines
 }
 
 // Encode writes an arbitrary image in any of the Netpbm formats.  Given an

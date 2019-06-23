@@ -264,9 +264,10 @@ func NewGrayM32(r image.Rectangle, m uint16) *GrayM32 {
 	return &GrayM32{pix, 2 * w, r, model}
 }
 
-// decodeConfigPGM reads and parses a PGM header, either "raw" (binary) or
-// "plain" (ASCII).
-func decodeConfigPGM(r io.Reader) (image.Config, error) {
+// decodeConfigPGMWithComments reads and parses a PGM header, either "raw"
+// (binary) or "plain" (ASCII).  Unlike decodeConfigPGM, it also returns any
+// comments appearing in the file.
+func decodeConfigPGMWithComments(r io.Reader) (image.Config, []string, error) {
 	// We really want a bufio.Reader.  If we were given one, use it.  If
 	// not, create a new one.
 	br, ok := r.(*bufio.Reader)
@@ -282,7 +283,7 @@ func decodeConfigPGM(r io.Reader) (image.Config, error) {
 		if err == nil {
 			err = errors.New("Invalid PGM header")
 		}
-		return image.Config{}, err
+		return image.Config{}, nil, err
 	}
 
 	// Store and return the image configuration.
@@ -294,16 +295,24 @@ func decodeConfigPGM(r io.Reader) (image.Config, error) {
 	} else {
 		cfg.ColorModel = npcolor.GrayM32Model{M: uint16(header.Maxval)}
 	}
-	return cfg, nil
+	return cfg, header.Comments, nil
 }
 
-// decodePGM reads a complete "raw" (binary) PGM image.
-func decodePGM(r io.Reader) (image.Image, error) {
+// decodeConfigPGM reads and parses a PGM header, either "raw"
+// (binary) or "plain" (ASCII).
+func decodeConfigPGM(r io.Reader) (image.Config, error) {
+	img, _, err := decodeConfigPGMWithComments(r)
+	return img, err
+}
+
+// decodePGMWithComments reads a complete "raw" (binary) PGM image.  Unlike
+// decodePGM, it also returns any comments appearing in the file.
+func decodePGMWithComments(r io.Reader) (image.Image, []string, error) {
 	// Read the image header, and use it to prepare a grayscale image.
 	br := bufio.NewReader(r)
-	config, err := decodeConfigPGM(br)
+	config, comments, err := decodeConfigPGMWithComments(br)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Create either a Gray or a Gray16 image.
@@ -330,36 +339,43 @@ func decodePGM(r io.Reader) (image.Image, error) {
 	for len(data) > 0 {
 		nRead, err := br.Read(data)
 		if err != nil && err != io.EOF {
-			return img, err
+			return img, nil, err
 		}
 		if nRead == 0 {
-			return img, errors.New("Failed to read binary PGM data")
+			return img, nil, errors.New("Failed to read binary PGM data")
 		}
 		data = data[nRead:]
 	}
-	return img, nil
+	return img, comments, nil
 }
 
-// decodePGMPlain reads a complete "plain" (ASCII) PGM image.
-func decodePGMPlain(r io.Reader) (image.Image, error) {
+// decodePGM reads a complete "raw" (binary) PGM image.
+func decodePGM(r io.Reader) (image.Image, error) {
+	img, _, err := decodePGMWithComments(r)
+	return img, err
+}
+
+// decodePGMPlainWithComments reads a complete "plain" (ASCII) PGM image.
+// Unlike decodePGMPlain, it also returns any comments appearing in the file.
+func decodePGMPlainWithComments(r io.Reader) (image.Image, []string, error) {
 	// Read the image header, and use it to prepare a grayscale image.
 	br := bufio.NewReader(r)
-	config, err := decodeConfigPGM(br)
+	config, comments, err := decodeConfigPGMWithComments(br)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var img image.Image // Image to return
 
 	// Define a simple error handler.
 	nr := newNetpbmReader(br)
-	badness := func() (image.Image, error) {
+	badness := func() (image.Image, []string, error) {
 		// Something went wrong.  Either we have an error code to
 		// explain what or we make up a generic error message.
 		err := nr.Err()
 		if err == nil {
 			err = errors.New("Failed to parse ASCII PGM data")
 		}
-		return img, err
+		return img, nil, err
 	}
 
 	// Create either a Gray or a Gray16 image.
@@ -407,7 +423,13 @@ func decodePGMPlain(r io.Reader) (image.Image, error) {
 			}
 		}
 	}
-	return img, nil
+	return img, comments, nil
+}
+
+// decodePGMPlain reads a complete "plain" (ASCII) PGM image.
+func decodePGMPlain(r io.Reader) (image.Image, error) {
+	img, _, err := decodePGMPlainWithComments(r)
+	return img, err
 }
 
 // Indicate that we can decode both raw and plain PGM files.
@@ -424,8 +446,10 @@ func encodePGM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	} else {
 		fmt.Fprintln(w, "P5")
 	}
-	if opts.Comment != "" {
-		fmt.Fprintf(w, "# %s\n", strings.Replace(opts.Comment, "\n", "# ", -1))
+	for _, cmt := range opts.Comments {
+		cmt = strings.ReplaceAll(cmt, "\n", " ")
+		cmt = strings.ReplaceAll(cmt, "\r", " ")
+		fmt.Fprintf(w, "# %s\n", cmt)
 	}
 	rect := img.Bounds()
 	width := rect.Max.X - rect.Min.X
