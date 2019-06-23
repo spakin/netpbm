@@ -233,6 +233,40 @@ RuneLoop:
 	return nil, nil, errors.New("Unexpected EOF in Netpbm header")
 }
 
+// GetASCIIData reads ASCII base-10 integers until the input array is filled.
+// It returns a success code.
+func (nr *netpbmReader) GetASCIIData(maxVal int, data []uint8) bool {
+	// Read ASCII base-10 integers until no more remain.
+	if maxVal < 256 {
+
+		for i := 0; i < len(data); i++ {
+			val := nr.GetNextInt()
+			switch {
+			case nr.Err() != nil:
+				return false
+			case val < 0 || val > maxVal:
+				return false
+			default:
+				data[i] = uint8(val)
+			}
+		}
+	} else {
+		for i := 0; i < len(data); i += 2 {
+			val := nr.GetNextInt()
+			switch {
+			case nr.Err() != nil:
+				return false
+			case val < 0 || val > maxVal:
+				return false
+			default:
+				data[i] = uint8(val >> 8)
+				data[i+1] = uint8(val)
+			}
+		}
+	}
+	return true
+}
+
 // A netpbmHeader encapsulates the components of an image header.
 type netpbmHeader struct {
 	Magic     string   // Two-character magic value (e.g., "P6" for PPM)

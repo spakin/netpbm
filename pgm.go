@@ -396,32 +396,9 @@ func decodePGMPlainWithComments(r io.Reader) (image.Image, []string, error) {
 		panic("Unexpected color model")
 	}
 
-	// Read ASCII base-10 integers until no more remain.
-	if maxVal < 256 {
-		for i := 0; i < len(data); i++ {
-			val := nr.GetNextInt()
-			switch {
-			case nr.Err() != nil:
-				return badness()
-			case val < 0 || val > maxVal:
-				return badness()
-			default:
-				data[i] = uint8(val)
-			}
-		}
-	} else {
-		for i := 0; i < len(data); i += 2 {
-			val := nr.GetNextInt()
-			switch {
-			case nr.Err() != nil:
-				return badness()
-			case val < 0 || val > maxVal:
-				return badness()
-			default:
-				data[i] = uint8(val >> 8)
-				data[i+1] = uint8(val)
-			}
-		}
+	// Read ASCII base-10 integers into the image data.
+	if !nr.GetASCIIData(maxVal, data) {
+		return badness()
 	}
 	return img, comments, nil
 }
