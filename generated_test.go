@@ -51,6 +51,67 @@ func TestDecodeRawPBM(t *testing.T) {
 	}
 }
 
+// TestNetpbmDecodeRawPBMConfig determines if netpbm.DecodeConfig can
+// decode the configuration of a raw PBM file.
+func TestNetpbmDecodeRawPBMConfig(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pbmRaw))
+	defer r.Close()
+	cfg, err := DecodeConfig(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Width != 64 || cfg.Height != 64 {
+		t.Fatalf("Expected a 64x64 image but received %dx%d", cfg.Width, cfg.Height)
+	}
+}
+
+// TestNetpbmDecodeRawPBM determines if netpbm.Decode can decode a raw PBM file.
+func TestNetpbmDecodeRawPBM(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pbmRaw))
+	defer r.Close()
+	img, err := Decode(r, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PBM {
+		t.Fatalf("Expected PBM but received %s", img.Format())
+	}
+	if img.MaxValue() != 1 {
+		t.Fatalf("Expected a maximum value of 1 but received %d", img.MaxValue())
+	}
+}
+
+// TestNetpbmDecodeRawPBMOpts determines if netpbm.Decode can decode a raw PBM
+// file with non-default options.
+func TestNetpbmDecodeRawPBMOpts(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pbmRaw))
+	defer r.Close()
+	img, err := Decode(r, &DecodeOptions{
+		Target: PBM,
+		Exact:  true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PBM {
+		t.Fatalf("Expected PBM but received %s", img.Format())
+	}
+}
+
+// TestNetpbmEncodeRawPBM confirms that encoding and decoding do not alter a raw
+// PBM file.
+func TestNetpbmEncodeRawPBM(t *testing.T) {
+	repeatDecodeEncode(t, pbmRaw, nil, nil)
+}
+
+// TestNetpbmEncodeRawPBMAsPNM confirms that encoding and decoding do not alter a
+// raw PBM file when treated as PNM.
+func TestNetpbmEncodeRawPBMAsPNM(t *testing.T) {
+	dOpts := &DecodeOptions{Target: PNM}
+	eOpts := &EncodeOptions{Format: PNM}
+	repeatDecodeEncode(t, pbmRaw, dOpts, eOpts)
+}
+
 // TestDecodePlainPBMConfig determines if image.DecodeConfig can decode
 // the configuration of a plain PBM file.
 func TestDecodePlainPBMConfig(t *testing.T) {
@@ -86,6 +147,67 @@ func TestDecodePlainPBM(t *testing.T) {
 	if nimg.MaxValue() != 1 {
 		t.Fatalf("Expected a maximum value of 1 but received %d", nimg.MaxValue())
 	}
+}
+
+// TestNetpbmDecodePlainPBMConfig determines if netpbm.DecodeConfig can
+// decode the configuration of a plain PBM file.
+func TestNetpbmDecodePlainPBMConfig(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pbmPlain))
+	defer r.Close()
+	cfg, err := DecodeConfig(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Width != 63 || cfg.Height != 65 {
+		t.Fatalf("Expected a 63x65 image but received %dx%d", cfg.Width, cfg.Height)
+	}
+}
+
+// TestNetpbmDecodePlainPBM determines if netpbm.Decode can decode a plain PBM file.
+func TestNetpbmDecodePlainPBM(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pbmPlain))
+	defer r.Close()
+	img, err := Decode(r, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PBM {
+		t.Fatalf("Expected PBM but received %s", img.Format())
+	}
+	if img.MaxValue() != 1 {
+		t.Fatalf("Expected a maximum value of 1 but received %d", img.MaxValue())
+	}
+}
+
+// TestNetpbmDecodePlainPBMOpts determines if netpbm.Decode can decode a plain PBM
+// file with non-default options.
+func TestNetpbmDecodePlainPBMOpts(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pbmPlain))
+	defer r.Close()
+	img, err := Decode(r, &DecodeOptions{
+		Target: PBM,
+		Exact:  true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PBM {
+		t.Fatalf("Expected PBM but received %s", img.Format())
+	}
+}
+
+// TestNetpbmEncodePlainPBM confirms that encoding and decoding do not alter a plain
+// PBM file.
+func TestNetpbmEncodePlainPBM(t *testing.T) {
+	repeatDecodeEncode(t, pbmPlain, nil, nil)
+}
+
+// TestNetpbmEncodePlainPBMAsPNM confirms that encoding and decoding do not alter a
+// plain PBM file when treated as PNM.
+func TestNetpbmEncodePlainPBMAsPNM(t *testing.T) {
+	dOpts := &DecodeOptions{Target: PNM}
+	eOpts := &EncodeOptions{Format: PNM}
+	repeatDecodeEncode(t, pbmPlain, dOpts, eOpts)
 }
 
 // TestDecodeRawPGMConfig determines if image.DecodeConfig can decode
@@ -125,6 +247,67 @@ func TestDecodeRawPGM(t *testing.T) {
 	}
 }
 
+// TestNetpbmDecodeRawPGMConfig determines if netpbm.DecodeConfig can
+// decode the configuration of a raw PGM file.
+func TestNetpbmDecodeRawPGMConfig(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pgmRaw))
+	defer r.Close()
+	cfg, err := DecodeConfig(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Width != 64 || cfg.Height != 64 {
+		t.Fatalf("Expected a 64x64 image but received %dx%d", cfg.Width, cfg.Height)
+	}
+}
+
+// TestNetpbmDecodeRawPGM determines if netpbm.Decode can decode a raw PGM file.
+func TestNetpbmDecodeRawPGM(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pgmRaw))
+	defer r.Close()
+	img, err := Decode(r, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PGM {
+		t.Fatalf("Expected PGM but received %s", img.Format())
+	}
+	if img.MaxValue() != 255 {
+		t.Fatalf("Expected a maximum value of 255 but received %d", img.MaxValue())
+	}
+}
+
+// TestNetpbmDecodeRawPGMOpts determines if netpbm.Decode can decode a raw PGM
+// file with non-default options.
+func TestNetpbmDecodeRawPGMOpts(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pgmRaw))
+	defer r.Close()
+	img, err := Decode(r, &DecodeOptions{
+		Target: PGM,
+		Exact:  true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PGM {
+		t.Fatalf("Expected PGM but received %s", img.Format())
+	}
+}
+
+// TestNetpbmEncodeRawPGM confirms that encoding and decoding do not alter a raw
+// PGM file.
+func TestNetpbmEncodeRawPGM(t *testing.T) {
+	repeatDecodeEncode(t, pgmRaw, nil, nil)
+}
+
+// TestNetpbmEncodeRawPGMAsPNM confirms that encoding and decoding do not alter a
+// raw PGM file when treated as PNM.
+func TestNetpbmEncodeRawPGMAsPNM(t *testing.T) {
+	dOpts := &DecodeOptions{Target: PNM}
+	eOpts := &EncodeOptions{Format: PNM}
+	repeatDecodeEncode(t, pgmRaw, dOpts, eOpts)
+}
+
 // TestDecodePlainPGMConfig determines if image.DecodeConfig can decode
 // the configuration of a plain PGM file.
 func TestDecodePlainPGMConfig(t *testing.T) {
@@ -160,6 +343,67 @@ func TestDecodePlainPGM(t *testing.T) {
 	if nimg.MaxValue() != 777 {
 		t.Fatalf("Expected a maximum value of 777 but received %d", nimg.MaxValue())
 	}
+}
+
+// TestNetpbmDecodePlainPGMConfig determines if netpbm.DecodeConfig can
+// decode the configuration of a plain PGM file.
+func TestNetpbmDecodePlainPGMConfig(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pgmPlain))
+	defer r.Close()
+	cfg, err := DecodeConfig(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Width != 63 || cfg.Height != 65 {
+		t.Fatalf("Expected a 63x65 image but received %dx%d", cfg.Width, cfg.Height)
+	}
+}
+
+// TestNetpbmDecodePlainPGM determines if netpbm.Decode can decode a plain PGM file.
+func TestNetpbmDecodePlainPGM(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pgmPlain))
+	defer r.Close()
+	img, err := Decode(r, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PGM {
+		t.Fatalf("Expected PGM but received %s", img.Format())
+	}
+	if img.MaxValue() != 777 {
+		t.Fatalf("Expected a maximum value of 777 but received %d", img.MaxValue())
+	}
+}
+
+// TestNetpbmDecodePlainPGMOpts determines if netpbm.Decode can decode a plain PGM
+// file with non-default options.
+func TestNetpbmDecodePlainPGMOpts(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pgmPlain))
+	defer r.Close()
+	img, err := Decode(r, &DecodeOptions{
+		Target: PGM,
+		Exact:  true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PGM {
+		t.Fatalf("Expected PGM but received %s", img.Format())
+	}
+}
+
+// TestNetpbmEncodePlainPGM confirms that encoding and decoding do not alter a plain
+// PGM file.
+func TestNetpbmEncodePlainPGM(t *testing.T) {
+	repeatDecodeEncode(t, pgmPlain, nil, nil)
+}
+
+// TestNetpbmEncodePlainPGMAsPNM confirms that encoding and decoding do not alter a
+// plain PGM file when treated as PNM.
+func TestNetpbmEncodePlainPGMAsPNM(t *testing.T) {
+	dOpts := &DecodeOptions{Target: PNM}
+	eOpts := &EncodeOptions{Format: PNM}
+	repeatDecodeEncode(t, pgmPlain, dOpts, eOpts)
 }
 
 // TestDecodeRawPPMConfig determines if image.DecodeConfig can decode
@@ -199,6 +443,67 @@ func TestDecodeRawPPM(t *testing.T) {
 	}
 }
 
+// TestNetpbmDecodeRawPPMConfig determines if netpbm.DecodeConfig can
+// decode the configuration of a raw PPM file.
+func TestNetpbmDecodeRawPPMConfig(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(ppmRaw))
+	defer r.Close()
+	cfg, err := DecodeConfig(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Width != 64 || cfg.Height != 64 {
+		t.Fatalf("Expected a 64x64 image but received %dx%d", cfg.Width, cfg.Height)
+	}
+}
+
+// TestNetpbmDecodeRawPPM determines if netpbm.Decode can decode a raw PPM file.
+func TestNetpbmDecodeRawPPM(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(ppmRaw))
+	defer r.Close()
+	img, err := Decode(r, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PPM {
+		t.Fatalf("Expected PPM but received %s", img.Format())
+	}
+	if img.MaxValue() != 255 {
+		t.Fatalf("Expected a maximum value of 255 but received %d", img.MaxValue())
+	}
+}
+
+// TestNetpbmDecodeRawPPMOpts determines if netpbm.Decode can decode a raw PPM
+// file with non-default options.
+func TestNetpbmDecodeRawPPMOpts(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(ppmRaw))
+	defer r.Close()
+	img, err := Decode(r, &DecodeOptions{
+		Target: PPM,
+		Exact:  true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PPM {
+		t.Fatalf("Expected PPM but received %s", img.Format())
+	}
+}
+
+// TestNetpbmEncodeRawPPM confirms that encoding and decoding do not alter a raw
+// PPM file.
+func TestNetpbmEncodeRawPPM(t *testing.T) {
+	repeatDecodeEncode(t, ppmRaw, nil, nil)
+}
+
+// TestNetpbmEncodeRawPPMAsPNM confirms that encoding and decoding do not alter a
+// raw PPM file when treated as PNM.
+func TestNetpbmEncodeRawPPMAsPNM(t *testing.T) {
+	dOpts := &DecodeOptions{Target: PNM}
+	eOpts := &EncodeOptions{Format: PNM}
+	repeatDecodeEncode(t, ppmRaw, dOpts, eOpts)
+}
+
 // TestDecodePlainPPMConfig determines if image.DecodeConfig can decode
 // the configuration of a plain PPM file.
 func TestDecodePlainPPMConfig(t *testing.T) {
@@ -234,4 +539,65 @@ func TestDecodePlainPPM(t *testing.T) {
 	if nimg.MaxValue() != 777 {
 		t.Fatalf("Expected a maximum value of 777 but received %d", nimg.MaxValue())
 	}
+}
+
+// TestNetpbmDecodePlainPPMConfig determines if netpbm.DecodeConfig can
+// decode the configuration of a plain PPM file.
+func TestNetpbmDecodePlainPPMConfig(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(ppmPlain))
+	defer r.Close()
+	cfg, err := DecodeConfig(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Width != 63 || cfg.Height != 65 {
+		t.Fatalf("Expected a 63x65 image but received %dx%d", cfg.Width, cfg.Height)
+	}
+}
+
+// TestNetpbmDecodePlainPPM determines if netpbm.Decode can decode a plain PPM file.
+func TestNetpbmDecodePlainPPM(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(ppmPlain))
+	defer r.Close()
+	img, err := Decode(r, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PPM {
+		t.Fatalf("Expected PPM but received %s", img.Format())
+	}
+	if img.MaxValue() != 777 {
+		t.Fatalf("Expected a maximum value of 777 but received %d", img.MaxValue())
+	}
+}
+
+// TestNetpbmDecodePlainPPMOpts determines if netpbm.Decode can decode a plain PPM
+// file with non-default options.
+func TestNetpbmDecodePlainPPMOpts(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(ppmPlain))
+	defer r.Close()
+	img, err := Decode(r, &DecodeOptions{
+		Target: PPM,
+		Exact:  true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PPM {
+		t.Fatalf("Expected PPM but received %s", img.Format())
+	}
+}
+
+// TestNetpbmEncodePlainPPM confirms that encoding and decoding do not alter a plain
+// PPM file.
+func TestNetpbmEncodePlainPPM(t *testing.T) {
+	repeatDecodeEncode(t, ppmPlain, nil, nil)
+}
+
+// TestNetpbmEncodePlainPPMAsPNM confirms that encoding and decoding do not alter a
+// plain PPM file when treated as PNM.
+func TestNetpbmEncodePlainPPMAsPNM(t *testing.T) {
+	dOpts := &DecodeOptions{Target: PNM}
+	eOpts := &EncodeOptions{Format: PNM}
+	repeatDecodeEncode(t, ppmPlain, dOpts, eOpts)
 }
