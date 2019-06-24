@@ -15,7 +15,7 @@ all "real" Netpbm types (PBM, PGM, PPM, and PAM, but not PNM).
 // TestDecode{{$Rp}}{{.Fmt}}Config determines if image.DecodeConfig can decode
 // the configuration of a {{$rp}} {{.Fmt}} file.
 func TestDecode{{$Rp}}{{.Fmt}}Config(t *testing.T) {
-	r := flate.NewReader(bytes.NewBufferString({{$lfmt}}{{$Rp}}))
+	r := flate.NewReader(bytes.NewBufferString({{.Image}}))
 	defer r.Close()
 	cfg, str, err := image.DecodeConfig(r)
 	if err != nil {
@@ -31,7 +31,7 @@ func TestDecode{{$Rp}}{{.Fmt}}Config(t *testing.T) {
 
 // TestDecode{{$Rp}}{{.Fmt}} determines if image.Decode can decode a {{$rp}} {{.Fmt}} file.
 func TestDecode{{$Rp}}{{.Fmt}}(t *testing.T) {
-	r := flate.NewReader(bytes.NewBufferString({{$lfmt}}{{$Rp}}))
+	r := flate.NewReader(bytes.NewBufferString({{.Image}}))
 	defer r.Close()
 	img, str, err := image.Decode(r)
 	if err != nil {
@@ -52,7 +52,7 @@ func TestDecode{{$Rp}}{{.Fmt}}(t *testing.T) {
 // TestNetpbmDecode{{$Rp}}{{.Fmt}}Config determines if netpbm.DecodeConfig can
 // decode the configuration of a {{$rp}} {{.Fmt}} file.
 func TestNetpbmDecode{{$Rp}}{{.Fmt}}Config(t *testing.T) {
-	r := flate.NewReader(bytes.NewBufferString({{$lfmt}}{{$Rp}}))
+	r := flate.NewReader(bytes.NewBufferString({{.Image}}))
 	defer r.Close()
 	cfg, err := DecodeConfig(r)
 	if err != nil {
@@ -65,7 +65,7 @@ func TestNetpbmDecode{{$Rp}}{{.Fmt}}Config(t *testing.T) {
 
 // TestNetpbmDecode{{$Rp}}{{.Fmt}} determines if netpbm.Decode can decode a {{$rp}} {{.Fmt}} file.
 func TestNetpbmDecode{{$Rp}}{{.Fmt}}(t *testing.T) {
-	r := flate.NewReader(bytes.NewBufferString({{$lfmt}}{{$Rp}}))
+	r := flate.NewReader(bytes.NewBufferString({{.Image}}))
 	defer r.Close()
 	img, err := Decode(r, nil)
 	if err != nil {
@@ -82,7 +82,7 @@ func TestNetpbmDecode{{$Rp}}{{.Fmt}}(t *testing.T) {
 // TestNetpbmDecode{{$Rp}}{{.Fmt}}Opts determines if netpbm.Decode can decode a {{$rp}} {{.Fmt}}
 // file with non-default options.
 func TestNetpbmDecode{{$Rp}}{{.Fmt}}Opts(t *testing.T) {
-	r := flate.NewReader(bytes.NewBufferString({{$lfmt}}{{$Rp}}))
+	r := flate.NewReader(bytes.NewBufferString({{.Image}}))
 	defer r.Close()
 	img, err := Decode(r, &DecodeOptions{
 		Target: {{.Fmt}},
@@ -99,7 +99,7 @@ func TestNetpbmDecode{{$Rp}}{{.Fmt}}Opts(t *testing.T) {
 // TestNetpbmEncode{{$Rp}}{{.Fmt}} confirms that encoding and decoding do not alter a {{$rp}}
 // {{.Fmt}} file.
 func TestNetpbmEncode{{$Rp}}{{.Fmt}}(t *testing.T) {
-	repeatDecodeEncode(t, {{$lfmt}}{{$Rp}}, nil, nil)
+	repeatDecodeEncode(t, {{.Image}}, nil, nil)
 }
 
 // TestNetpbmEncode{{$Rp}}{{.Fmt}}AsPNM confirms that encoding and decoding do not alter a
@@ -107,5 +107,5 @@ func TestNetpbmEncode{{$Rp}}{{.Fmt}}(t *testing.T) {
 func TestNetpbmEncode{{$Rp}}{{.Fmt}}AsPNM(t *testing.T) {
 	dOpts := &DecodeOptions{Target: PNM}
 	eOpts := &EncodeOptions{Format: PNM}
-	repeatDecodeEncode(t, {{$lfmt}}{{$Rp}}, dOpts, eOpts)
+	repeatDecodeEncode(t, {{.Image}}, dOpts, eOpts)
 }
