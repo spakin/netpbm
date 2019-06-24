@@ -5,46 +5,8 @@ package netpbm
 import (
 	"bytes"
 	"compress/flate"
-	"image"
 	"testing"
 )
-
-// TestDecodeRawPGMConfig determines if image.DecodeConfig can decode the
-// configuration of a raw PGM file.
-func TestDecodeRawPGMConfig(t *testing.T) {
-	r := flate.NewReader(bytes.NewBufferString(pgmRaw))
-	defer r.Close()
-	cfg, str, err := image.DecodeConfig(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if str != "pgm" {
-		t.Fatalf("Expected \"pgm\" but received %q", str)
-	}
-	if cfg.Width != 64 || cfg.Height != 64 {
-		t.Fatalf("Expected a 64x64 image but received %dx%d", cfg.Width, cfg.Height)
-	}
-}
-
-// TestDecodeRawPGM determines if image.Decode can decode a raw PGM file.
-func TestDecodeRawPGM(t *testing.T) {
-	r := flate.NewReader(bytes.NewBufferString(pgmRaw))
-	defer r.Close()
-	img, str, err := image.Decode(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if str != "pgm" {
-		t.Fatalf("Expected pgm but received %s", str)
-	}
-	nimg, ok := img.(Image)
-	if !ok {
-		t.Fatal("Image is not a Netpbm image")
-	}
-	if nimg.MaxValue() != 255 {
-		t.Fatalf("Expected a maximum value of 255 but received %d", nimg.MaxValue())
-	}
-}
 
 // TestNetpbmDecodeRawPGMConfig determines if netpbm.DecodeConfig can decode
 // the configuration of a raw PGM file.
@@ -144,43 +106,6 @@ func TestDecodePPMEncodePGM(t *testing.T) {
 	err := Encode(&w, img, opts)
 	if err != nil {
 		t.Fatal(err)
-	}
-}
-
-// TestDecodePlainPGMConfig determines if image.DecodeConfig can decode the
-// configuration of a plain PGM file.
-func TestDecodePlainPGMConfig(t *testing.T) {
-	r := flate.NewReader(bytes.NewBufferString(pgmPlain))
-	defer r.Close()
-	cfg, str, err := image.DecodeConfig(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if str != "pgm" {
-		t.Fatalf("Expected \"pgm\" but received %q", str)
-	}
-	if cfg.Width != 63 || cfg.Height != 65 {
-		t.Fatalf("Expected a 63x65 image but received %dx%d", cfg.Width, cfg.Height)
-	}
-}
-
-// TestDecodePlainPGM determines if image.Decode can decode a plain PGM file.
-func TestDecodePlainPGM(t *testing.T) {
-	r := flate.NewReader(bytes.NewBufferString(pgmPlain))
-	defer r.Close()
-	img, str, err := image.Decode(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if str != "pgm" {
-		t.Fatalf("Expected pgm but received %s", str)
-	}
-	nimg, ok := img.(Image)
-	if !ok {
-		t.Fatal("Image is not a Netpbm image")
-	}
-	if nimg.MaxValue() != 777 {
-		t.Fatalf("Expected a maximum value of 777 but received %d", nimg.MaxValue())
 	}
 }
 

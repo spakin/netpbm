@@ -1,0 +1,50 @@
+{{- /*
+This is a Go template file for declaring test functions that work on
+all "real" Netpbm types (PBM, PGM, PPM, and PAM, but not PNM).
+*/ -}}
+
+{{- /* Declare some commonly required variables. */ -}}
+{{$lfmt := ToLower .Fmt}}
+{{$Rp := "Raw"}}
+{{$rp := "raw"}}
+{{if .Plain}}
+  {{$Rp = "Plain"}}
+  {{$rp = "plain"}}
+{{end}}
+
+// TestDecode{{$Rp}}{{.Fmt}}Config determines if image.DecodeConfig can decode
+// the configuration of a {{$rp}} {{.Fmt}} file.
+func TestDecode{{$Rp}}{{.Fmt}}Config(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString({{$lfmt}}{{$Rp}}))
+	defer r.Close()
+	cfg, str, err := image.DecodeConfig(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if str != "{{$lfmt}}" {
+		t.Fatalf("Expected \"{{$lfmt}}\" but received %q", str)
+	}
+	if cfg.Width != {{.Width}} || cfg.Height != {{.Height}} {
+		t.Fatalf("Expected a {{.Width}}x{{.Height}} image but received %dx%d", cfg.Width, cfg.Height)
+	}
+}
+
+// TestDecode{{$Rp}}{{.Fmt}} determines if image.Decode can decode a {{$rp}} {{.Fmt}} file.
+func TestDecode{{$Rp}}{{.Fmt}}(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString({{$lfmt}}{{$Rp}}))
+	defer r.Close()
+	img, str, err := image.Decode(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if str != "{{$lfmt}}" {
+		t.Fatalf("Expected {{$lfmt}} but received %s", str)
+	}
+	nimg, ok := img.(Image)
+	if !ok {
+		t.Fatal("Image is not a Net{{$lfmt}} image")
+	}
+	if nimg.MaxValue() != {{.Maxval}} {
+		t.Fatalf("Expected a maximum value of {{.Maxval}} but received %d", nimg.MaxValue())
+	}
+}
