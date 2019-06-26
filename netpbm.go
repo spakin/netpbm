@@ -274,7 +274,7 @@ type netpbmHeader struct {
 	Height    int      // Image height in pixels
 	Depth     int      // Image pixel depth in bytes
 	Maxval    int      // Maximum channel value (0-65535)
-	TupleType string   // Image Tuple type (RGB_ALPHA, etc)
+	TupleType string   // Image tuple type ("RGB_ALPHA", etc.)
 	Comments  []string // Aggregated list of comment lines
 }
 

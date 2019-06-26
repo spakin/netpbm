@@ -412,10 +412,56 @@ func decodeConfigPAMWithComments(r io.Reader) (image.Config, []string, error) {
 	var cfg image.Config
 	cfg.Width = header.Width
 	cfg.Height = header.Height
+	ttype, ok := ttToInt[header.TupleType]
+	if !ok {
+		return image.Config{}, nil, fmt.Errorf("Unsupported tuple type %q", header.TupleType)
+	}
 	if header.Maxval < 256 {
-		cfg.ColorModel = npcolor.RGBAMModel{M: uint8(header.Maxval)}
+		switch ttype {
+		case pamColorAlpha:
+			cfg.ColorModel = npcolor.RGBAMModel{M: uint8(header.Maxval)}
+		case pamColor:
+			cfg.ColorModel = npcolor.RGBMModel{M: uint8(header.Maxval)}
+		case pamGrayscaleAlpha:
+			// TODO: Implement grayscale + alpha
+			panic("Grayscale + alpha is not currently supported")
+		case pamGrayscale:
+			cfg.ColorModel = npcolor.GrayMModel{M: uint8(header.Maxval)}
+		case pamBlackAndWhiteAlpha:
+			// TODO: Implement BW + alpha
+			panic("Black & white + alpha is not currently supported")
+		case pamBlackAndWhite:
+			// Define a color map with 0=black and 1=white.
+			colorMap := make(color.Palette, 2)
+			colorMap[0] = color.RGBA{0, 0, 0, 255}
+			colorMap[1] = color.RGBA{255, 255, 255, 255}
+			cfg.ColorModel = colorMap
+		default:
+			panic(fmt.Sprintf("Internal error processing tuple type %q", header.TupleType))
+		}
 	} else {
-		cfg.ColorModel = npcolor.RGBAM64Model{M: uint16(header.Maxval)}
+		switch ttype {
+		case pamColorAlpha:
+			cfg.ColorModel = npcolor.RGBAM64Model{M: uint16(header.Maxval)}
+		case pamColor:
+			cfg.ColorModel = npcolor.RGBM64Model{M: uint16(header.Maxval)}
+		case pamGrayscaleAlpha:
+			// TODO: Implement grayscale + alpha
+			panic("Grayscale + alpha is not currently supported")
+		case pamGrayscale:
+			cfg.ColorModel = npcolor.GrayM32Model{M: uint16(header.Maxval)}
+		case pamBlackAndWhiteAlpha:
+			// TODO: Implement BW + alpha
+			panic("Black & white + alpha is not currently supported")
+		case pamBlackAndWhite:
+			// Define a color map with 0=black and 1=white.
+			colorMap := make(color.Palette, 2)
+			colorMap[0] = color.RGBA{0, 0, 0, 255}
+			colorMap[1] = color.RGBA{255, 255, 255, 255}
+			cfg.ColorModel = colorMap
+		default:
+			panic(fmt.Sprintf("Internal error processing tuple type %q", header.TupleType))
+		}
 	}
 	return cfg, header.Comments, nil
 }
