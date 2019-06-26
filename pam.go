@@ -421,7 +421,7 @@ func decodePAMWithComments(r io.Reader) (image.Image, []string, error) {
 		rgb := NewRGBAM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
 		data = rgb.Pix
 		img = rgb
-	case npcolor.RGBM64Model:
+	case npcolor.RGBAM64Model:
 		maxVal = uint(model.M)
 		rgb := NewRGBAM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
 		data = rgb.Pix
@@ -460,20 +460,20 @@ func init() {
 func encodePAM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	// Map the tuple type from a string to an integer.
 	const (
-		BLACKANDWHITE = iota
-		BLACKANDWHITE_ALPHA
-		GRAYSCALE
-		GRAYSCALE_ALPHA
-		RGB
-		RGB_ALPHA
+		BlackAndWhite = iota
+		BlackAndWhiteAlpha
+		Grayscale
+		GrayscaleAlpha
+		Color
+		ColorAlpha
 	)
 	var tt2int = map[string]int{
-		"BLACKANDWHITE":       BLACKANDWHITE,
-		"BLACKANDWHITE_ALPHA": BLACKANDWHITE_ALPHA,
-		"GRAYSCALE":           GRAYSCALE,
-		"GRAYSCALE_ALPHA":     GRAYSCALE_ALPHA,
-		"RGB":                 RGB,
-		"RGB_ALPHA":           RGB_ALPHA,
+		"BLACKANDWHITE":       BlackAndWhite,
+		"BLACKANDWHITE_ALPHA": BlackAndWhiteAlpha,
+		"GRAYSCALE":           Grayscale,
+		"GRAYSCALE_ALPHA":     GrayscaleAlpha,
+		"RGB":                 Color,
+		"RGB_ALPHA":           ColorAlpha,
 	}
 
 	// Determine the depth from the tuple type.
@@ -483,17 +483,17 @@ func encodePAM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 		return fmt.Errorf("Unsupported tuple type %q", opts.TupleType)
 	}
 	switch ttype {
-	case RGB_ALPHA:
+	case ColorAlpha:
 		depth = 4
-	case RGB:
+	case Color:
 		depth = 3
-	case GRAYSCALE_ALPHA:
+	case GrayscaleAlpha:
 		depth = 2
-	case GRAYSCALE:
+	case Grayscale:
 		depth = 1
-	case BLACKANDWHITE_ALPHA:
+	case BlackAndWhiteAlpha:
 		depth = 2
-	case BLACKANDWHITE:
+	case BlackAndWhite:
 		depth = 1
 	default:
 		panic(fmt.Sprintf("Internal error processing tuple type %q", opts.TupleType))
@@ -519,38 +519,38 @@ func encodePAM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	// Write the PPM data.
 	if opts.MaxValue < 256 {
 		switch ttype {
-		case RGB_ALPHA:
+		case ColorAlpha:
 			return encodeRGBAData(w, img, opts)
-		case RGB:
+		case Color:
 			return encodeRGBData(w, img, opts)
-		case GRAYSCALE_ALPHA:
+		case GrayscaleAlpha:
 			// TODO: Implement grayscale + alpha
 			panic("Grayscale + alpha is not currently supported")
-		case GRAYSCALE:
+		case Grayscale:
 			return encodeGrayData(w, img, opts)
-		case BLACKANDWHITE_ALPHA:
+		case BlackAndWhiteAlpha:
 			// TODO: Implement BW + alpha
 			panic("Black & white + alpha is not currently supported")
-		case BLACKANDWHITE:
+		case BlackAndWhite:
 			return encodeBWData(w, img, opts)
 		default:
 			panic(fmt.Sprintf("Internal error processing tuple type %q", opts.TupleType))
 		}
 	} else {
 		switch ttype {
-		case RGB_ALPHA:
+		case ColorAlpha:
 			return encodeRGBA64Data(w, img, opts)
-		case RGB:
+		case Color:
 			return encodeRGB64Data(w, img, opts)
-		case GRAYSCALE_ALPHA:
+		case GrayscaleAlpha:
 			// TODO: Implement 16-bit grayscale + alpha
 			panic("16-bit grayscale + alpha is not currently supported")
-		case GRAYSCALE:
+		case Grayscale:
 			return encodeGray32Data(w, img, opts)
-		case BLACKANDWHITE_ALPHA:
+		case BlackAndWhiteAlpha:
 			// TODO: Implement 16-bit BW + alpha
 			panic("16-bit Black & white + alpha is not currently supported")
-		case BLACKANDWHITE:
+		case BlackAndWhite:
 			return encodeBWData(w, img, opts)
 		default:
 			panic(fmt.Sprintf("Internal error processing tuple type %q", opts.TupleType))
