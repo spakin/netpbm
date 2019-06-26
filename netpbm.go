@@ -548,10 +548,11 @@ func Decode(r io.Reader, opts *DecodeOptions) (Image, error) {
 
 // EncodeOptions represents a list of options for writing a Netpbm file.
 type EncodeOptions struct {
-	Format   Format   // Netpbm format
-	MaxValue uint16   // Maximum value for each color channel (ignored for PBM)
-	Plain    bool     // true="plain" (ASCII); false="raw" (binary)
-	Comments []string // Header comments, with no leading "#" or trailing newlines
+	Format    Format   // Netpbm format
+	MaxValue  uint16   // Maximum value for each color channel (ignored for PBM)
+	Plain     bool     // true="plain" (ASCII); false="raw" (binary)
+	TupleType string   // Image tuple type for a PAM image (RGB_ALPHA, etc.)
+	Comments  []string // Header comments, with no leading "#" or trailing newlines
 }
 
 // Encode writes an arbitrary image in any of the Netpbm formats.  Given an
@@ -576,6 +577,12 @@ func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 		default:
 			o.Format = PAM
 		}
+	}
+
+	// If Format is PAM and TupleType is not specified, default to
+	// RGB_ALPHA.
+	if o.Format == PAM && o.TupleType == "" {
+		o.TupleType = "RGB_ALPHA"
 	}
 
 	// If MaxValue is 0, replace it with an intelligently selected maximum

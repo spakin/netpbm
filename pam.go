@@ -4,14 +4,13 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/spakin/netpbm/npcolor"
 	"image"
 	"image/color"
 	"io"
+	"strconv"
 	"strings"
 	"unicode"
-
-	"github.com/spakin/netpbm/npcolor"
-	"strconv"
 )
 
 // An RGBAM is an in-memory image whose At method returns npcolor.RGBAM values.
@@ -459,6 +458,47 @@ func init() {
 
 // encodePAM writes an arbitrary image in PAM format.
 func encodePAM(w io.Writer, img image.Image, opts *EncodeOptions) error {
+	// Map the tuple type from a string to an integer.
+	const (
+		BLACKANDWHITE = iota
+		BLACKANDWHITE_ALPHA
+		GRAYSCALE
+		GRAYSCALE_ALPHA
+		RGB
+		RGB_ALPHA
+	)
+	var tt2int = map[string]int{
+		"BLACKANDWHITE":       BLACKANDWHITE,
+		"BLACKANDWHITE_ALPHA": BLACKANDWHITE_ALPHA,
+		"GRAYSCALE":           GRAYSCALE,
+		"GRAYSCALE_ALPHA":     GRAYSCALE_ALPHA,
+		"RGB":                 RGB,
+		"RGB_ALPHA":           RGB_ALPHA,
+	}
+
+	// Determine the depth from the tuple type.
+	var depth int
+	ttype, ok := tt2int[opts.TupleType]
+	if !ok {
+		return fmt.Errorf("Unsupported tuple type %q", opts.TupleType)
+	}
+	switch ttype {
+	case RGB_ALPHA:
+		depth = 4
+	case RGB:
+		depth = 3
+	case GRAYSCALE_ALPHA:
+		depth = 2
+	case GRAYSCALE:
+		depth = 1
+	case BLACKANDWHITE_ALPHA:
+		depth = 2
+	case BLACKANDWHITE:
+		depth = 1
+	default:
+		panic(fmt.Sprintf("Internal error processing tuple type %q", opts.TupleType))
+	}
+
 	// Write the PAM header.
 	fmt.Fprintln(w, "P7")
 	for _, cmt := range opts.Comments {
@@ -471,16 +511,51 @@ func encodePAM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	height := rect.Max.Y - rect.Min.Y
 	fmt.Fprintf(w, "WIDTH %d\n", width)
 	fmt.Fprintf(w, "HEIGHT %d\n", height)
-	fmt.Fprintf(w, "DEPTH 4\n")
+	fmt.Fprintf(w, "DEPTH %d\n", depth)
 	fmt.Fprintf(w, "MAXVAL %d\n", opts.MaxValue)
-	fmt.Fprintf(w, "TUPLTYPE RGB_ALPHA\n")
+	fmt.Fprintf(w, "TUPLTYPE %s\n", opts.TupleType)
 	fmt.Fprintf(w, "ENDHDR\n")
 
 	// Write the PPM data.
 	if opts.MaxValue < 256 {
-		return encodeRGBAData(w, img, opts)
+		switch ttype {
+		case RGB_ALPHA:
+			return encodeRGBAData(w, img, opts)
+		case RGB:
+			return encodeRGBData(w, img, opts)
+		case GRAYSCALE_ALPHA:
+			// TODO: Implement grayscale + alpha
+			panic("Grayscale + alpha is not currently supported")
+		case GRAYSCALE:
+			return encodeGrayData(w, img, opts)
+		case BLACKANDWHITE_ALPHA:
+			// TODO: Implement BW + alpha
+			panic("Black & white + alpha is not currently supported")
+		case BLACKANDWHITE:
+			return encodeBWData(w, img, opts)
+		default:
+			panic(fmt.Sprintf("Internal error processing tuple type %q", opts.TupleType))
+		}
+	} else {
+		switch ttype {
+		case RGB_ALPHA:
+			return encodeRGBA64Data(w, img, opts)
+		case RGB:
+			return encodeRGB64Data(w, img, opts)
+		case GRAYSCALE_ALPHA:
+			// TODO: Implement 16-bit grayscale + alpha
+			panic("16-bit grayscale + alpha is not currently supported")
+		case GRAYSCALE:
+			return encodeGray32Data(w, img, opts)
+		case BLACKANDWHITE_ALPHA:
+			// TODO: Implement 16-bit BW + alpha
+			panic("16-bit Black & white + alpha is not currently supported")
+		case BLACKANDWHITE:
+			return encodeBWData(w, img, opts)
+		default:
+			panic(fmt.Sprintf("Internal error processing tuple type %q", opts.TupleType))
+		}
 	}
-	return encodeRGBA64Data(w, img, opts)
 }
 
 // encodeRGBAData writes image data as 8-bit samples.
