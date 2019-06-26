@@ -482,26 +482,52 @@ func decodePAMWithComments(r io.Reader) (image.Image, []string, error) {
 		return nil, nil, err
 	}
 
-	// Create either a Color or a Color64 image.
+	// Create an appropriate image type.
 	var img image.Image // Image to return
 	var data []uint8    // RGB (no M) image data
 	var maxVal uint     // 100% white value
 	switch model := config.ColorModel.(type) {
 	case npcolor.RGBAMModel:
 		maxVal = uint(model.M)
-		rgb := NewRGBAM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
-		data = rgb.Pix
-		img = rgb
+		pImg := NewRGBAM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
+		data = pImg.Pix
+		img = pImg
+
+	case npcolor.RGBMModel:
+		maxVal = uint(model.M)
+		pImg := NewRGBM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
+		data = pImg.Pix
+		img = pImg
+
+	case npcolor.GrayMModel:
+		maxVal = uint(model.M)
+		pImg := NewGrayM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
+		data = pImg.Pix
+		img = pImg
+
 	case npcolor.RGBAM64Model:
 		maxVal = uint(model.M)
-		rgb := NewRGBAM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
-		data = rgb.Pix
-		img = rgb
+		pImg := NewRGBAM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
+		data = pImg.Pix
+		img = pImg
+
+	case npcolor.RGBM64Model:
+		maxVal = uint(model.M)
+		pImg := NewRGBM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
+		data = pImg.Pix
+		img = pImg
+
+	case npcolor.GrayM32Model:
+		maxVal = uint(model.M)
+		pImg := NewGrayM32(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
+		data = pImg.Pix
+		img = pImg
+
 	default:
 		panic("Unexpected color model")
 	}
 
-	// Raw PAM images are nice because we can read directly into the image
+	// PAM images are nice because we can read directly into the image
 	// data.
 	for len(data) > 0 {
 		nRead, err := br.Read(data)
