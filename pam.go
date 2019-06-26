@@ -1,3 +1,5 @@
+// This file provides image support for Portable Arbitrary Map (PAM) files.
+
 package netpbm
 
 import (
@@ -12,6 +14,29 @@ import (
 	"strings"
 	"unicode"
 )
+
+// Define a type representing a known tuple type.
+type pamTupleType int
+
+// These are the allowed values of a pamTupleType.
+const (
+	pamBlackAndWhite pamTupleType = iota
+	pamBlackAndWhiteAlpha
+	pamGrayscale
+	pamGrayscaleAlpha
+	pamColor
+	pamColorAlpha
+)
+
+// ttToInt maps a PAM tuple type from a string to an integer.
+var ttToInt = map[string]pamTupleType{
+	"BLACKANDWHITE":       pamBlackAndWhite,
+	"BLACKANDWHITE_ALPHA": pamBlackAndWhiteAlpha,
+	"GRAYSCALE":           pamGrayscale,
+	"GRAYSCALE_ALPHA":     pamGrayscaleAlpha,
+	"RGB":                 pamColor,
+	"RGB_ALPHA":           pamColorAlpha,
+}
 
 // An RGBAM is an in-memory image whose At method returns npcolor.RGBAM values.
 type RGBAM struct {
@@ -458,42 +483,24 @@ func init() {
 
 // encodePAM writes an arbitrary image in PAM format.
 func encodePAM(w io.Writer, img image.Image, opts *EncodeOptions) error {
-	// Map the tuple type from a string to an integer.
-	const (
-		BlackAndWhite = iota
-		BlackAndWhiteAlpha
-		Grayscale
-		GrayscaleAlpha
-		Color
-		ColorAlpha
-	)
-	var tt2int = map[string]int{
-		"BLACKANDWHITE":       BlackAndWhite,
-		"BLACKANDWHITE_ALPHA": BlackAndWhiteAlpha,
-		"GRAYSCALE":           Grayscale,
-		"GRAYSCALE_ALPHA":     GrayscaleAlpha,
-		"RGB":                 Color,
-		"RGB_ALPHA":           ColorAlpha,
-	}
-
 	// Determine the depth from the tuple type.
 	var depth int
-	ttype, ok := tt2int[opts.TupleType]
+	ttype, ok := ttToInt[opts.TupleType]
 	if !ok {
 		return fmt.Errorf("Unsupported tuple type %q", opts.TupleType)
 	}
 	switch ttype {
-	case ColorAlpha:
+	case pamColorAlpha:
 		depth = 4
-	case Color:
+	case pamColor:
 		depth = 3
-	case GrayscaleAlpha:
+	case pamGrayscaleAlpha:
 		depth = 2
-	case Grayscale:
+	case pamGrayscale:
 		depth = 1
-	case BlackAndWhiteAlpha:
+	case pamBlackAndWhiteAlpha:
 		depth = 2
-	case BlackAndWhite:
+	case pamBlackAndWhite:
 		depth = 1
 	default:
 		panic(fmt.Sprintf("Internal error processing tuple type %q", opts.TupleType))
@@ -519,38 +526,38 @@ func encodePAM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	// Write the PPM data.
 	if opts.MaxValue < 256 {
 		switch ttype {
-		case ColorAlpha:
+		case pamColorAlpha:
 			return encodeRGBAData(w, img, opts)
-		case Color:
+		case pamColor:
 			return encodeRGBData(w, img, opts)
-		case GrayscaleAlpha:
+		case pamGrayscaleAlpha:
 			// TODO: Implement grayscale + alpha
 			panic("Grayscale + alpha is not currently supported")
-		case Grayscale:
+		case pamGrayscale:
 			return encodeGrayData(w, img, opts)
-		case BlackAndWhiteAlpha:
+		case pamBlackAndWhiteAlpha:
 			// TODO: Implement BW + alpha
 			panic("Black & white + alpha is not currently supported")
-		case BlackAndWhite:
+		case pamBlackAndWhite:
 			return encodeBWData(w, img, opts)
 		default:
 			panic(fmt.Sprintf("Internal error processing tuple type %q", opts.TupleType))
 		}
 	} else {
 		switch ttype {
-		case ColorAlpha:
+		case pamColorAlpha:
 			return encodeRGBA64Data(w, img, opts)
-		case Color:
+		case pamColor:
 			return encodeRGB64Data(w, img, opts)
-		case GrayscaleAlpha:
+		case pamGrayscaleAlpha:
 			// TODO: Implement 16-bit grayscale + alpha
 			panic("16-bit grayscale + alpha is not currently supported")
-		case Grayscale:
+		case pamGrayscale:
 			return encodeGray32Data(w, img, opts)
-		case BlackAndWhiteAlpha:
+		case pamBlackAndWhiteAlpha:
 			// TODO: Implement 16-bit BW + alpha
 			panic("16-bit Black & white + alpha is not currently supported")
-		case BlackAndWhite:
+		case pamBlackAndWhite:
 			return encodeBWData(w, img, opts)
 		default:
 			panic(fmt.Sprintf("Internal error processing tuple type %q", opts.TupleType))
