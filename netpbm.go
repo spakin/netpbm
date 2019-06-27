@@ -533,7 +533,7 @@ func DecodeWithComments(r io.Reader, opts *DecodeOptions) (Image, []string, erro
 				nimg = nimg.(*GrayM32).PromoteToRGBM64()
 			}
 		default:
-			panic("Attempted to promote a format other than PBM or PFM")
+			panic("Attempted to promote a format other than PBM or PGM")
 		}
 	}
 	return nimg, comments, nil

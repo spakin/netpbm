@@ -26,6 +26,7 @@ var AllConfigs = []NetpbmType{
 	{Fmt: "PGM", Plain: true, Width: 63, Height: 65, Maxval: 777, Image: "pgmPlain"},
 	{Fmt: "PPM", Plain: false, Width: 64, Height: 64, Maxval: 255, Image: "ppmRaw"},
 	{Fmt: "PPM", Plain: true, Width: 63, Height: 65, Maxval: 777, Image: "ppmPlain"},
+	{Fmt: "PAM", Plain: false, Width: 64, Height: 64, Maxval: 255, Image: "pamRawColor"},
 }
 
 func main() {

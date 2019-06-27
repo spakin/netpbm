@@ -601,3 +601,101 @@ func TestNetpbmEncodePlainPPMAsPNM(t *testing.T) {
 	eOpts := &EncodeOptions{Format: PNM}
 	repeatDecodeEncode(t, ppmPlain, dOpts, eOpts)
 }
+
+// TestDecodeRawPAMConfig determines if image.DecodeConfig can decode
+// the configuration of a raw PAM file.
+func TestDecodeRawPAMConfig(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pamRawColor))
+	defer r.Close()
+	cfg, str, err := image.DecodeConfig(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if str != "pam" {
+		t.Fatalf("Expected \"pam\" but received %q", str)
+	}
+	if cfg.Width != 64 || cfg.Height != 64 {
+		t.Fatalf("Expected a 64x64 image but received %dx%d", cfg.Width, cfg.Height)
+	}
+}
+
+// TestDecodeRawPAM determines if image.Decode can decode a raw PAM file.
+func TestDecodeRawPAM(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pamRawColor))
+	defer r.Close()
+	img, str, err := image.Decode(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if str != "pam" {
+		t.Fatalf("Expected pam but received %s", str)
+	}
+	nimg, ok := img.(Image)
+	if !ok {
+		t.Fatal("Image is not a Netpam image")
+	}
+	if nimg.MaxValue() != 255 {
+		t.Fatalf("Expected a maximum value of 255 but received %d", nimg.MaxValue())
+	}
+}
+
+// TestNetpbmDecodeRawPAMConfig determines if netpbm.DecodeConfig can
+// decode the configuration of a raw PAM file.
+func TestNetpbmDecodeRawPAMConfig(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pamRawColor))
+	defer r.Close()
+	cfg, err := DecodeConfig(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Width != 64 || cfg.Height != 64 {
+		t.Fatalf("Expected a 64x64 image but received %dx%d", cfg.Width, cfg.Height)
+	}
+}
+
+// TestNetpbmDecodeRawPAM determines if netpbm.Decode can decode a raw PAM file.
+func TestNetpbmDecodeRawPAM(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pamRawColor))
+	defer r.Close()
+	img, err := Decode(r, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PAM {
+		t.Fatalf("Expected PAM but received %s", img.Format())
+	}
+	if img.MaxValue() != 255 {
+		t.Fatalf("Expected a maximum value of 255 but received %d", img.MaxValue())
+	}
+}
+
+// TestNetpbmDecodeRawPAMOpts determines if netpbm.Decode can decode a raw PAM
+// file with non-default options.
+func TestNetpbmDecodeRawPAMOpts(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pamRawColor))
+	defer r.Close()
+	img, err := Decode(r, &DecodeOptions{
+		Target: PAM,
+		Exact:  true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PAM {
+		t.Fatalf("Expected PAM but received %s", img.Format())
+	}
+}
+
+// TestNetpbmEncodeRawPAM confirms that encoding and decoding do not alter a raw
+// PAM file.
+func TestNetpbmEncodeRawPAM(t *testing.T) {
+	repeatDecodeEncode(t, pamRawColor, nil, nil)
+}
+
+// TestNetpbmEncodeRawPAMAsPNM confirms that encoding and decoding do not alter a
+// raw PAM file when treated as PNM.
+func TestNetpbmEncodeRawPAMAsPNM(t *testing.T) {
+	dOpts := &DecodeOptions{Target: PNM}
+	eOpts := &EncodeOptions{Format: PNM}
+	repeatDecodeEncode(t, pamRawColor, dOpts, eOpts)
+}
