@@ -661,8 +661,8 @@ func TestNetpbmDecodeRawPAM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if img.Format() != PAM {
-		t.Fatalf("Expected PAM but received %s", img.Format())
+	if img.Format() != PPM {
+		t.Fatalf("Expected PPM but received %s", img.Format())
 	}
 	if img.MaxValue() != 255 {
 		t.Fatalf("Expected a maximum value of 255 but received %d", img.MaxValue())
@@ -675,14 +675,14 @@ func TestNetpbmDecodeRawPAMOpts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pamRawColor))
 	defer r.Close()
 	img, err := Decode(r, &DecodeOptions{
-		Target: PAM,
+		Target: PPM,
 		Exact:  true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if img.Format() != PAM {
-		t.Fatalf("Expected PAM but received %s", img.Format())
+	if img.Format() != PPM {
+		t.Fatalf("Expected PPM but received %s", img.Format())
 	}
 }
 

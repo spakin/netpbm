@@ -38,53 +38,9 @@ var ttToInt = map[string]pamTupleType{
 	"RGB_ALPHA":           pamColorAlpha,
 }
 
-// A PAMRGBM is identical to an RGBM but is of PAM format, not PPM format.
-type PAMRGBM struct{ RGBM }
-
-// NewPAMRGBM returns a new PAMRGBM with the given bounds and maximum channel
-// value.
-func NewPAMRGBM(r image.Rectangle, m uint8) *PAMRGBM {
-	w, h := r.Dx(), r.Dy()
-	pix := make([]uint8, 3*w*h)
-	model := npcolor.RGBMModel{M: m}
-	pam := &PAMRGBM{}
-	pam.Pix = pix
-	pam.Stride = 3 * w
-	pam.Rect = r
-	pam.Model = model
-	return pam
-}
-
-// Format identifies the image as a PAM image.
-func (p *PAMRGBM) Format() Format {
-	return PAM
-}
-
-// A PAMRGBM64 is identical to an RGBM64 but is of PAM format, not PPM format.
-type PAMRGBM64 struct{ RGBM64 }
-
-// NewPAMRGBM64 returns a new PAMRGBM64 with the given bounds and maximum
-// channel value.
-func NewPAMRGBM64(r image.Rectangle, m uint16) *PAMRGBM64 {
-	w, h := r.Dx(), r.Dy()
-	pix := make([]uint8, 6*w*h)
-	model := npcolor.RGBM64Model{M: m}
-	pam := &PAMRGBM64{}
-	pam.Pix = pix
-	pam.Stride = 6 * w
-	pam.Rect = r
-	pam.Model = model
-	return pam
-}
-
-// Format identifies the image as a PAM image.
-func (p *PAMRGBM64) Format() Format {
-	return PAM
-}
-
-// A PAMRGBAM is an in-memory image whose At method returns npcolor.RGBAM
+// A RGBAM is an in-memory image whose At method returns npcolor.RGBAM
 // values.
-type PAMRGBAM struct {
+type RGBAM struct {
 	// Pix holds the image's pixels, in R, G, B (no M) order. The pixel at
 	// (x, y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*3].
 	Pix []uint8
@@ -97,22 +53,22 @@ type PAMRGBAM struct {
 	Model npcolor.RGBAMModel
 }
 
-// ColorModel returns the PAMRGBAM image's color model.
-func (p *PAMRGBAM) ColorModel() color.Model { return p.Model }
+// ColorModel returns the RGBAM image's color model.
+func (p *RGBAM) ColorModel() color.Model { return p.Model }
 
 // Bounds returns the domain for which At can return non-zero color.  The
 // bounds do not necessarily contain the point (0, 0).
-func (p *PAMRGBAM) Bounds() image.Rectangle { return p.Rect }
+func (p *RGBAM) Bounds() image.Rectangle { return p.Rect }
 
 // At returns the color of the pixel at (x, y) as a color.Color.
 // At(Bounds().Min.X, Bounds().Min.Y) returns the upper-left pixel of the grid.
 // At(Bounds().Max.X-1, Bounds().Max.Y-1) returns the lower-right one.
-func (p *PAMRGBAM) At(x, y int) color.Color {
+func (p *RGBAM) At(x, y int) color.Color {
 	return p.RGBAMAt(x, y)
 }
 
 // RGBAMAt returns the color of the pixel at (x, y) as an npcolor.RGBAM.
-func (p *PAMRGBAM) RGBAMAt(x, y int) npcolor.RGBAM {
+func (p *RGBAM) RGBAMAt(x, y int) npcolor.RGBAM {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return npcolor.RGBAM{}
 	}
@@ -128,12 +84,12 @@ func (p *PAMRGBAM) RGBAMAt(x, y int) npcolor.RGBAM {
 
 // PixOffset returns the index of the first element of Pix that corresponds to
 // the pixel at (x, y).
-func (p *PAMRGBAM) PixOffset(x, y int) int {
+func (p *RGBAM) PixOffset(x, y int) int {
 	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*4
 }
 
 // Set sets the pixel at (x, y) to a given color, expressed as a color.Color.
-func (p *PAMRGBAM) Set(x, y int, c color.Color) {
+func (p *RGBAM) Set(x, y int, c color.Color) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
 	}
@@ -147,7 +103,7 @@ func (p *PAMRGBAM) Set(x, y int, c color.Color) {
 
 // SetRGBAM sets the pixel at (x, y) to a given color, expressed as an
 // npcolor.RGBAM.
-func (p *PAMRGBAM) SetRGBAM(x, y int, c npcolor.RGBAM) {
+func (p *RGBAM) SetRGBAM(x, y int, c npcolor.RGBAM) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
 	}
@@ -164,17 +120,17 @@ func (p *PAMRGBAM) SetRGBAM(x, y int, c npcolor.RGBAM) {
 
 // SubImage returns an image representing the portion of the image p visible
 // through r. The returned value shares pixels with the original image.
-func (p *PAMRGBAM) SubImage(r image.Rectangle) image.Image {
+func (p *RGBAM) SubImage(r image.Rectangle) image.Image {
 	r = r.Intersect(p.Rect)
 	// If r1 and r2 are Rectangles, r1.Intersect(r2) is not guaranteed to
 	// be inside either r1 or r2 if the intersection is empty. Without
 	// explicitly checking for this, the Pix[i:] expression below can
 	// panic.
 	if r.Empty() {
-		return &PAMRGBAM{}
+		return &RGBAM{}
 	}
 	i := p.PixOffset(r.Min.X, r.Min.Y)
-	return &PAMRGBAM{
+	return &RGBAM{
 		Pix:    p.Pix[i:],
 		Stride: p.Stride,
 		Rect:   r,
@@ -182,7 +138,7 @@ func (p *PAMRGBAM) SubImage(r image.Rectangle) image.Image {
 }
 
 // Opaque scans the entire image and reports whether it is fully opaque.
-func (p *PAMRGBAM) Opaque() bool {
+func (p *RGBAM) Opaque() bool {
 	if p.Rect.Empty() {
 		return true
 	}
@@ -200,27 +156,32 @@ func (p *PAMRGBAM) Opaque() bool {
 }
 
 // MaxValue returns the maximum value allowed on any color channel.
-func (p *PAMRGBAM) MaxValue() uint16 {
+func (p *RGBAM) MaxValue() uint16 {
 	return uint16(p.Model.M)
 }
 
 // Format identifies the image as a PPM image.
-func (p *PAMRGBAM) Format() Format {
-	return PAM
+func (p *RGBAM) Format() Format {
+	return PPM
 }
 
-// NewPAMRGBAM returns a new PAMRGBAM with the given bounds and maximum channel
+// HasAlpha indicates that there is an alpha channel.
+func (p *RGBAM) HasAlpha() bool {
+	return true
+}
+
+// NewRGBAM returns a new RGBAM with the given bounds and maximum channel
 // value.
-func NewPAMRGBAM(r image.Rectangle, m uint8) *PAMRGBAM {
+func NewRGBAM(r image.Rectangle, m uint8) *RGBAM {
 	w, h := r.Dx(), r.Dy()
 	pix := make([]uint8, 4*w*h)
 	model := npcolor.RGBAMModel{M: m}
-	return &PAMRGBAM{pix, 4 * w, r, model}
+	return &RGBAM{pix, 4 * w, r, model}
 }
 
-// A PAMRGBAM64 is an in-memory image whose At method returns npcolor.RGBAM64
+// A RGBAM64 is an in-memory image whose At method returns npcolor.RGBAM64
 // values.
-type PAMRGBAM64 struct {
+type RGBAM64 struct {
 	// Pix holds the image's pixels, in R, G, B, M order and big-endian
 	// format. The pixel at (x, y) starts at Pix[(y-Rect.Min.Y)*Stride +
 	// (x-Rect.Min.X)*8].
@@ -234,22 +195,22 @@ type PAMRGBAM64 struct {
 	Model npcolor.RGBAM64Model
 }
 
-// ColorModel returns the PAMRGBAM64 image's color model.
-func (p *PAMRGBAM64) ColorModel() color.Model { return p.Model }
+// ColorModel returns the RGBAM64 image's color model.
+func (p *RGBAM64) ColorModel() color.Model { return p.Model }
 
 // Bounds returns the domain for which At can return non-zero color.  The
 // bounds do not necessarily contain the point (0, 0).
-func (p *PAMRGBAM64) Bounds() image.Rectangle { return p.Rect }
+func (p *RGBAM64) Bounds() image.Rectangle { return p.Rect }
 
 // At returns the color of the pixel at (x, y) as a color.Color.
 // At(Bounds().Min.X, Bounds().Min.Y) returns the upper-left pixel of the grid.
 // At(Bounds().Max.X-1, Bounds().Max.Y-1) returns the lower-right one.
-func (p *PAMRGBAM64) At(x, y int) color.Color {
+func (p *RGBAM64) At(x, y int) color.Color {
 	return p.RGBAM64At(x, y)
 }
 
 // RGBAM64At returns the color of the pixel at (x, y) as an npcolor.RGBAM64.
-func (p *PAMRGBAM64) RGBAM64At(x, y int) npcolor.RGBAM64 {
+func (p *RGBAM64) RGBAM64At(x, y int) npcolor.RGBAM64 {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return npcolor.RGBAM64{}
 	}
@@ -265,12 +226,12 @@ func (p *PAMRGBAM64) RGBAM64At(x, y int) npcolor.RGBAM64 {
 
 // PixOffset returns the index of the first element of Pix that corresponds to
 // the pixel at (x, y).
-func (p *PAMRGBAM64) PixOffset(x, y int) int {
+func (p *RGBAM64) PixOffset(x, y int) int {
 	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*8
 }
 
 // Set sets the pixel at (x, y) to a given color, expressed as a color.Color.
-func (p *PAMRGBAM64) Set(x, y int, c color.Color) {
+func (p *RGBAM64) Set(x, y int, c color.Color) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
 	}
@@ -288,7 +249,7 @@ func (p *PAMRGBAM64) Set(x, y int, c color.Color) {
 
 // SetRGBAM64 sets the pixel at (x, y) to a given color, expressed as an
 // npcolor.RGBAM.
-func (p *PAMRGBAM64) SetRGBAM64(x, y int, c npcolor.RGBAM64) {
+func (p *RGBAM64) SetRGBAM64(x, y int, c npcolor.RGBAM64) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
 	}
@@ -309,17 +270,17 @@ func (p *PAMRGBAM64) SetRGBAM64(x, y int, c npcolor.RGBAM64) {
 
 // SubImage returns an image representing the portion of the image p visible
 // through r. The returned value shares pixels with the original image.
-func (p *PAMRGBAM64) SubImage(r image.Rectangle) image.Image {
+func (p *RGBAM64) SubImage(r image.Rectangle) image.Image {
 	r = r.Intersect(p.Rect)
 	// If r1 and r2 are Rectangles, r1.Intersect(r2) is not guaranteed to
 	// be inside either r1 or r2 if the intersection is empty. Without
 	// explicitly checking for this, the Pix[i:] expression below can
 	// panic.
 	if r.Empty() {
-		return &PAMRGBAM64{}
+		return &RGBAM64{}
 	}
 	i := p.PixOffset(r.Min.X, r.Min.Y)
-	return &PAMRGBAM64{
+	return &RGBAM64{
 		Pix:    p.Pix[i:],
 		Stride: p.Stride,
 		Rect:   r,
@@ -327,7 +288,7 @@ func (p *PAMRGBAM64) SubImage(r image.Rectangle) image.Image {
 }
 
 // Opaque scans the entire image and reports whether it is fully opaque.
-func (p *PAMRGBAM64) Opaque() bool {
+func (p *RGBAM64) Opaque() bool {
 	if p.Rect.Empty() {
 		return true
 	}
@@ -345,22 +306,27 @@ func (p *PAMRGBAM64) Opaque() bool {
 }
 
 // MaxValue returns the maximum value allowed on any color channel.
-func (p *PAMRGBAM64) MaxValue() uint16 {
+func (p *RGBAM64) MaxValue() uint16 {
 	return uint16(p.Model.M)
 }
 
 // Format identifies the image as a PPM image.
-func (p *PAMRGBAM64) Format() Format {
-	return PAM
+func (p *RGBAM64) Format() Format {
+	return PPM
 }
 
-// NewPAMRGBAM64 returns a new PAMRGBAM64 with the given bounds and maximum
+// HasAlpha indicates that there is an alpha channel.
+func (p *RGBAM64) HasAlpha() bool {
+	return true
+}
+
+// NewRGBAM64 returns a new RGBAM64 with the given bounds and maximum
 // channel value.
-func NewPAMRGBAM64(r image.Rectangle, m uint16) *PAMRGBAM64 {
+func NewRGBAM64(r image.Rectangle, m uint16) *RGBAM64 {
 	w, h := r.Dx(), r.Dy()
 	pix := make([]uint8, 8*w*h)
 	model := npcolor.RGBAM64Model{M: m}
-	return &PAMRGBAM64{pix, 8 * w, r, model}
+	return &RGBAM64{pix, 8 * w, r, model}
 }
 
 // GetPamHeader parses the entire header of a PAM file (raw or
@@ -535,13 +501,13 @@ func decodePAMWithComments(r io.Reader) (image.Image, []string, error) {
 	switch model := config.ColorModel.(type) {
 	case npcolor.RGBAMModel:
 		maxVal = uint(model.M)
-		pImg := NewPAMRGBAM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
+		pImg := NewRGBAM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
 		data = pImg.Pix
 		img = pImg
 
 	case npcolor.RGBMModel:
 		maxVal = uint(model.M)
-		pImg := NewPAMRGBM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
+		pImg := NewRGBM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
 		data = pImg.Pix
 		img = pImg
 
@@ -553,13 +519,13 @@ func decodePAMWithComments(r io.Reader) (image.Image, []string, error) {
 
 	case npcolor.RGBAM64Model:
 		maxVal = uint(model.M)
-		pImg := NewPAMRGBAM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
+		pImg := NewRGBAM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
 		data = pImg.Pix
 		img = pImg
 
 	case npcolor.RGBM64Model:
 		maxVal = uint(model.M)
-		pImg := NewPAMRGBM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
+		pImg := NewRGBM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
 		data = pImg.Pix
 		img = pImg
 

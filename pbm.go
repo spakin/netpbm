@@ -28,6 +28,11 @@ func (p *BW) Format() Format {
 	return PBM
 }
 
+// HasAlpha indicates that there is no alpha channel.
+func (p *BW) HasAlpha() bool {
+	return false
+}
+
 // NewBW returns a new black-and-white image with the given bounds and
 // maximum value.
 func NewBW(r image.Rectangle) *BW {

@@ -71,8 +71,8 @@ func TestNetpbmDecode{{$Rp}}{{.Fmt}}(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if img.Format() != {{.Fmt}} {
-		t.Fatalf("Expected {{.Fmt}} but received %s", img.Format())
+	if img.Format() != {{.BaseFmt}} {
+		t.Fatalf("Expected {{.BaseFmt}} but received %s", img.Format())
 	}
 	if img.MaxValue() != {{.Maxval}} {
 		t.Fatalf("Expected a maximum value of {{.Maxval}} but received %d", img.MaxValue())
@@ -85,14 +85,14 @@ func TestNetpbmDecode{{$Rp}}{{.Fmt}}Opts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString({{.Image}}))
 	defer r.Close()
 	img, err := Decode(r, &DecodeOptions{
-		Target: {{.Fmt}},
+		Target: {{.BaseFmt}},
 		Exact:  true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if img.Format() != {{.Fmt}} {
-		t.Fatalf("Expected {{.Fmt}} but received %s", img.Format())
+	if img.Format() != {{.BaseFmt}} {
+		t.Fatalf("Expected {{.BaseFmt}} but received %s", img.Format())
 	}
 }
 

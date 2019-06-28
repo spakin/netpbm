@@ -333,6 +333,7 @@ type Image interface {
 	image.Image                             // At, Bounds, and ColorModel
 	MaxValue() uint16                       // Maximum value on each color channel
 	Format() Format                         // Netpbm format
+	HasAlpha() bool                         // true=alpha channel; false=no alpha channel
 	Opaque() bool                           // Report whether the image is fully opaque
 	PixOffset(x, y int) int                 // Find (x, y) in pixel data
 	Set(x, y int, c color.Color)            // Set a pixel to a color
@@ -347,8 +348,8 @@ const (
 	PNM Format = iota // Portable Any Map (any of PBM, PGM, or PPM)
 	PBM               // Portable Bit Map (black and white)
 	PGM               // Portable Gray Map (grayscale)
-	PPM               // Portable Pix Map (color)
-	PAM               // Portable Arbitrary Map (alpha)
+	PPM               // Portable Pixel Map (color)
+	PAM               // Portable Arbitrary Map (B&W, grayscale, or color with optional alpha)
 )
 
 // String outputs the name of a Netpbm format.
@@ -493,11 +494,14 @@ func DecodeWithComments(r io.Reader, opts *DecodeOptions) (Image, []string, erro
 		}
 		img, comments, err = decodePPMWithComments(rr)
 	case '7':
-		// Raw PAM
-		if o.Exact && o.Target != PAM {
-			return nil, nil, errors.New("PAM rejected by Decode options")
-		}
+		// PAM
 		img, comments, err = decodePAMWithComments(rr)
+		if err != nil {
+			return nil, nil, err
+		}
+		if o.Exact && img.(Image).Format() != o.Target {
+			return nil, nil, fmt.Errorf("%s-flavored PAM rejected by Decode options", img.(Image).Format())
+		}
 	default:
 		// None of the above
 		return nil, nil, fmt.Errorf("Unrecognized magic sequence %q", string(magic))
@@ -575,7 +579,7 @@ func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 		case Image:
 			o.Format = img.Format()
 		default:
-			o.Format = PAM
+			o.Format = PPM
 		}
 	}
 

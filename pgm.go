@@ -114,6 +114,11 @@ func (p *GrayM) Format() Format {
 	return PGM
 }
 
+// HasAlpha indicates that there is no alpha channel.
+func (p *GrayM) HasAlpha() bool {
+	return false
+}
+
 // PromoteToRGBM generates an 8-bit color image that looks identical to
 // the given grayscale image.
 func (p *GrayM) PromoteToRGBM() *RGBM {
@@ -239,6 +244,11 @@ func (p *GrayM32) MaxValue() uint16 {
 // Format identifies the image as a PGM image.
 func (p *GrayM32) Format() Format {
 	return PGM
+}
+
+// HasAlpha indicates that there is no alpha channel.
+func (p *GrayM32) HasAlpha() bool {
+	return false
 }
 
 // PromoteToRGBM64 generates a 16-bit color image that looks identical to

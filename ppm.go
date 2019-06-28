@@ -125,6 +125,11 @@ func (p *RGBM) Format() Format {
 	return PPM
 }
 
+// HasAlpha indicates that there is no alpha channel.
+func (p *RGBM) HasAlpha() bool {
+	return false
+}
+
 // NewRGBM returns a new RGBM with the given bounds and maximum channel value.
 func NewRGBM(r image.Rectangle, m uint8) *RGBM {
 	w, h := r.Dx(), r.Dy()
@@ -249,6 +254,11 @@ func (p *RGBM64) MaxValue() uint16 {
 // Format identifies the image as a PPM image.
 func (p *RGBM64) Format() Format {
 	return PPM
+}
+
+// HasAlpha indicates that there is no alpha channel.
+func (p *RGBM64) HasAlpha() bool {
+	return false
 }
 
 // NewRGBM64 returns a new RGBM64 with the given bounds and maximum channel
