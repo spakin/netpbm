@@ -12,9 +12,9 @@ all "real" Netpbm types (PBM, PGM, PPM, and PAM, but not PNM).
   {{$rp = "plain"}}
 {{end}}
 
-// TestDecode{{$Rp}}{{.Fmt}}Config determines if image.DecodeConfig can decode
+// TestDecode{{$Rp}}{{.Fmt}}{{.Suffix}}Config determines if image.DecodeConfig can decode
 // the configuration of a {{$rp}} {{.Fmt}} file.
-func TestDecode{{$Rp}}{{.Fmt}}Config(t *testing.T) {
+func TestDecode{{$Rp}}{{.Fmt}}{{.Suffix}}Config(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString({{.Image}}))
 	defer r.Close()
 	cfg, str, err := image.DecodeConfig(r)
@@ -29,8 +29,8 @@ func TestDecode{{$Rp}}{{.Fmt}}Config(t *testing.T) {
 	}
 }
 
-// TestDecode{{$Rp}}{{.Fmt}} determines if image.Decode can decode a {{$rp}} {{.Fmt}} file.
-func TestDecode{{$Rp}}{{.Fmt}}(t *testing.T) {
+// TestDecode{{$Rp}}{{.Fmt}}{{.Suffix}} determines if image.Decode can decode a {{$rp}} {{.Fmt}} file.
+func TestDecode{{$Rp}}{{.Fmt}}{{.Suffix}}(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString({{.Image}}))
 	defer r.Close()
 	img, str, err := image.Decode(r)
@@ -49,9 +49,9 @@ func TestDecode{{$Rp}}{{.Fmt}}(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecode{{$Rp}}{{.Fmt}}Config determines if netpbm.DecodeConfig can
+// TestNetpbmDecode{{$Rp}}{{.Fmt}}{{.Suffix}}Config determines if netpbm.DecodeConfig can
 // decode the configuration of a {{$rp}} {{.Fmt}} file.
-func TestNetpbmDecode{{$Rp}}{{.Fmt}}Config(t *testing.T) {
+func TestNetpbmDecode{{$Rp}}{{.Fmt}}{{.Suffix}}Config(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString({{.Image}}))
 	defer r.Close()
 	cfg, err := DecodeConfig(r)
@@ -63,8 +63,9 @@ func TestNetpbmDecode{{$Rp}}{{.Fmt}}Config(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecode{{$Rp}}{{.Fmt}} determines if netpbm.Decode can decode a {{$rp}} {{.Fmt}} file.
-func TestNetpbmDecode{{$Rp}}{{.Fmt}}(t *testing.T) {
+// TestNetpbmDecode{{$Rp}}{{.Fmt}}{{.Suffix}} determines if netpbm.Decode can decode a
+// {{$rp}} {{.Fmt}} file.
+func TestNetpbmDecode{{$Rp}}{{.Fmt}}{{.Suffix}}(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString({{.Image}}))
 	defer r.Close()
 	img, err := Decode(r, nil)
@@ -79,9 +80,9 @@ func TestNetpbmDecode{{$Rp}}{{.Fmt}}(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecode{{$Rp}}{{.Fmt}}Opts determines if netpbm.Decode can decode a {{$rp}} {{.Fmt}}
-// file with non-default options.
-func TestNetpbmDecode{{$Rp}}{{.Fmt}}Opts(t *testing.T) {
+// TestNetpbmDecode{{$Rp}}{{.Fmt}}{{.Suffix}}Opts determines if netpbm.Decode can decode a
+// {{$rp}} {{.Fmt}} file with non-default options.
+func TestNetpbmDecode{{$Rp}}{{.Fmt}}{{.Suffix}}Opts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString({{.Image}}))
 	defer r.Close()
 	img, err := Decode(r, &DecodeOptions{
@@ -96,15 +97,15 @@ func TestNetpbmDecode{{$Rp}}{{.Fmt}}Opts(t *testing.T) {
 	}
 }
 
-// TestNetpbmEncode{{$Rp}}{{.Fmt}} confirms that encoding and decoding do not alter a {{$rp}}
-// {{.Fmt}} file.
-func TestNetpbmEncode{{$Rp}}{{.Fmt}}(t *testing.T) {
+// TestNetpbmEncode{{$Rp}}{{.Fmt}}{{.Suffix}} confirms that encoding and decoding do not alter
+// a {{$rp}} {{.Fmt}} file.
+func TestNetpbmEncode{{$Rp}}{{.Fmt}}{{.Suffix}}(t *testing.T) {
 	repeatDecodeEncode(t, {{.Image}}, nil, nil)
 }
 
-// TestNetpbmEncode{{$Rp}}{{.Fmt}}AsPNM confirms that encoding and decoding do not alter a
-// {{$rp}} {{.Fmt}} file when treated as PNM.
-func TestNetpbmEncode{{$Rp}}{{.Fmt}}AsPNM(t *testing.T) {
+// TestNetpbmEncode{{$Rp}}{{.Fmt}}{{.Suffix}}AsPNM confirms that encoding and decoding do not
+// alter a {{$rp}} {{.Fmt}} file when treated as PNM.
+func TestNetpbmEncode{{$Rp}}{{.Fmt}}{{.Suffix}}AsPNM(t *testing.T) {
 	dOpts := &DecodeOptions{Target: PNM}
 	eOpts := &EncodeOptions{Format: PNM}
 	repeatDecodeEncode(t, {{.Image}}, dOpts, eOpts)

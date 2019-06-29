@@ -17,6 +17,7 @@ type NetpbmType struct {
 	Height  int    // Expected height
 	Maxval  int    // Expected maximum value
 	Image   string // Test image (variable declared in netpbm_test.go)
+	Suffix  string // Suffix to append to test names
 }
 
 // AllConfigs describes all Netpbm formats we want to test.
@@ -28,6 +29,7 @@ var AllConfigs = []NetpbmType{
 	{Fmt: "PPM", BaseFmt: "PPM", Plain: false, Width: 64, Height: 64, Maxval: 255, Image: "ppmRaw"},
 	{Fmt: "PPM", BaseFmt: "PPM", Plain: true, Width: 63, Height: 65, Maxval: 777, Image: "ppmPlain"},
 	{Fmt: "PAM", BaseFmt: "PPM", Plain: false, Width: 64, Height: 64, Maxval: 255, Image: "pamRawColor"},
+	{Fmt: "PAM", BaseFmt: "PPM", Plain: false, Width: 64, Height: 64, Maxval: 255, Image: "pamRawColorAlpha", Suffix: "Alpha"},
 }
 
 func main() {

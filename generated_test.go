@@ -65,7 +65,8 @@ func TestNetpbmDecodeRawPBMConfig(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodeRawPBM determines if netpbm.Decode can decode a raw PBM file.
+// TestNetpbmDecodeRawPBM determines if netpbm.Decode can decode a
+// raw PBM file.
 func TestNetpbmDecodeRawPBM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmRaw))
 	defer r.Close()
@@ -81,8 +82,8 @@ func TestNetpbmDecodeRawPBM(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodeRawPBMOpts determines if netpbm.Decode can decode a raw PBM
-// file with non-default options.
+// TestNetpbmDecodeRawPBMOpts determines if netpbm.Decode can decode a
+// raw PBM file with non-default options.
 func TestNetpbmDecodeRawPBMOpts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmRaw))
 	defer r.Close()
@@ -98,14 +99,14 @@ func TestNetpbmDecodeRawPBMOpts(t *testing.T) {
 	}
 }
 
-// TestNetpbmEncodeRawPBM confirms that encoding and decoding do not alter a raw
-// PBM file.
+// TestNetpbmEncodeRawPBM confirms that encoding and decoding do not alter
+// a raw PBM file.
 func TestNetpbmEncodeRawPBM(t *testing.T) {
 	repeatDecodeEncode(t, pbmRaw, nil, nil)
 }
 
-// TestNetpbmEncodeRawPBMAsPNM confirms that encoding and decoding do not alter a
-// raw PBM file when treated as PNM.
+// TestNetpbmEncodeRawPBMAsPNM confirms that encoding and decoding do not
+// alter a raw PBM file when treated as PNM.
 func TestNetpbmEncodeRawPBMAsPNM(t *testing.T) {
 	dOpts := &DecodeOptions{Target: PNM}
 	eOpts := &EncodeOptions{Format: PNM}
@@ -163,7 +164,8 @@ func TestNetpbmDecodePlainPBMConfig(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodePlainPBM determines if netpbm.Decode can decode a plain PBM file.
+// TestNetpbmDecodePlainPBM determines if netpbm.Decode can decode a
+// plain PBM file.
 func TestNetpbmDecodePlainPBM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmPlain))
 	defer r.Close()
@@ -179,8 +181,8 @@ func TestNetpbmDecodePlainPBM(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodePlainPBMOpts determines if netpbm.Decode can decode a plain PBM
-// file with non-default options.
+// TestNetpbmDecodePlainPBMOpts determines if netpbm.Decode can decode a
+// plain PBM file with non-default options.
 func TestNetpbmDecodePlainPBMOpts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pbmPlain))
 	defer r.Close()
@@ -196,14 +198,14 @@ func TestNetpbmDecodePlainPBMOpts(t *testing.T) {
 	}
 }
 
-// TestNetpbmEncodePlainPBM confirms that encoding and decoding do not alter a plain
-// PBM file.
+// TestNetpbmEncodePlainPBM confirms that encoding and decoding do not alter
+// a plain PBM file.
 func TestNetpbmEncodePlainPBM(t *testing.T) {
 	repeatDecodeEncode(t, pbmPlain, nil, nil)
 }
 
-// TestNetpbmEncodePlainPBMAsPNM confirms that encoding and decoding do not alter a
-// plain PBM file when treated as PNM.
+// TestNetpbmEncodePlainPBMAsPNM confirms that encoding and decoding do not
+// alter a plain PBM file when treated as PNM.
 func TestNetpbmEncodePlainPBMAsPNM(t *testing.T) {
 	dOpts := &DecodeOptions{Target: PNM}
 	eOpts := &EncodeOptions{Format: PNM}
@@ -261,7 +263,8 @@ func TestNetpbmDecodeRawPGMConfig(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodeRawPGM determines if netpbm.Decode can decode a raw PGM file.
+// TestNetpbmDecodeRawPGM determines if netpbm.Decode can decode a
+// raw PGM file.
 func TestNetpbmDecodeRawPGM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmRaw))
 	defer r.Close()
@@ -277,8 +280,8 @@ func TestNetpbmDecodeRawPGM(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodeRawPGMOpts determines if netpbm.Decode can decode a raw PGM
-// file with non-default options.
+// TestNetpbmDecodeRawPGMOpts determines if netpbm.Decode can decode a
+// raw PGM file with non-default options.
 func TestNetpbmDecodeRawPGMOpts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmRaw))
 	defer r.Close()
@@ -294,14 +297,14 @@ func TestNetpbmDecodeRawPGMOpts(t *testing.T) {
 	}
 }
 
-// TestNetpbmEncodeRawPGM confirms that encoding and decoding do not alter a raw
-// PGM file.
+// TestNetpbmEncodeRawPGM confirms that encoding and decoding do not alter
+// a raw PGM file.
 func TestNetpbmEncodeRawPGM(t *testing.T) {
 	repeatDecodeEncode(t, pgmRaw, nil, nil)
 }
 
-// TestNetpbmEncodeRawPGMAsPNM confirms that encoding and decoding do not alter a
-// raw PGM file when treated as PNM.
+// TestNetpbmEncodeRawPGMAsPNM confirms that encoding and decoding do not
+// alter a raw PGM file when treated as PNM.
 func TestNetpbmEncodeRawPGMAsPNM(t *testing.T) {
 	dOpts := &DecodeOptions{Target: PNM}
 	eOpts := &EncodeOptions{Format: PNM}
@@ -359,7 +362,8 @@ func TestNetpbmDecodePlainPGMConfig(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodePlainPGM determines if netpbm.Decode can decode a plain PGM file.
+// TestNetpbmDecodePlainPGM determines if netpbm.Decode can decode a
+// plain PGM file.
 func TestNetpbmDecodePlainPGM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmPlain))
 	defer r.Close()
@@ -375,8 +379,8 @@ func TestNetpbmDecodePlainPGM(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodePlainPGMOpts determines if netpbm.Decode can decode a plain PGM
-// file with non-default options.
+// TestNetpbmDecodePlainPGMOpts determines if netpbm.Decode can decode a
+// plain PGM file with non-default options.
 func TestNetpbmDecodePlainPGMOpts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pgmPlain))
 	defer r.Close()
@@ -392,14 +396,14 @@ func TestNetpbmDecodePlainPGMOpts(t *testing.T) {
 	}
 }
 
-// TestNetpbmEncodePlainPGM confirms that encoding and decoding do not alter a plain
-// PGM file.
+// TestNetpbmEncodePlainPGM confirms that encoding and decoding do not alter
+// a plain PGM file.
 func TestNetpbmEncodePlainPGM(t *testing.T) {
 	repeatDecodeEncode(t, pgmPlain, nil, nil)
 }
 
-// TestNetpbmEncodePlainPGMAsPNM confirms that encoding and decoding do not alter a
-// plain PGM file when treated as PNM.
+// TestNetpbmEncodePlainPGMAsPNM confirms that encoding and decoding do not
+// alter a plain PGM file when treated as PNM.
 func TestNetpbmEncodePlainPGMAsPNM(t *testing.T) {
 	dOpts := &DecodeOptions{Target: PNM}
 	eOpts := &EncodeOptions{Format: PNM}
@@ -457,7 +461,8 @@ func TestNetpbmDecodeRawPPMConfig(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodeRawPPM determines if netpbm.Decode can decode a raw PPM file.
+// TestNetpbmDecodeRawPPM determines if netpbm.Decode can decode a
+// raw PPM file.
 func TestNetpbmDecodeRawPPM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(ppmRaw))
 	defer r.Close()
@@ -473,8 +478,8 @@ func TestNetpbmDecodeRawPPM(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodeRawPPMOpts determines if netpbm.Decode can decode a raw PPM
-// file with non-default options.
+// TestNetpbmDecodeRawPPMOpts determines if netpbm.Decode can decode a
+// raw PPM file with non-default options.
 func TestNetpbmDecodeRawPPMOpts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(ppmRaw))
 	defer r.Close()
@@ -490,14 +495,14 @@ func TestNetpbmDecodeRawPPMOpts(t *testing.T) {
 	}
 }
 
-// TestNetpbmEncodeRawPPM confirms that encoding and decoding do not alter a raw
-// PPM file.
+// TestNetpbmEncodeRawPPM confirms that encoding and decoding do not alter
+// a raw PPM file.
 func TestNetpbmEncodeRawPPM(t *testing.T) {
 	repeatDecodeEncode(t, ppmRaw, nil, nil)
 }
 
-// TestNetpbmEncodeRawPPMAsPNM confirms that encoding and decoding do not alter a
-// raw PPM file when treated as PNM.
+// TestNetpbmEncodeRawPPMAsPNM confirms that encoding and decoding do not
+// alter a raw PPM file when treated as PNM.
 func TestNetpbmEncodeRawPPMAsPNM(t *testing.T) {
 	dOpts := &DecodeOptions{Target: PNM}
 	eOpts := &EncodeOptions{Format: PNM}
@@ -555,7 +560,8 @@ func TestNetpbmDecodePlainPPMConfig(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodePlainPPM determines if netpbm.Decode can decode a plain PPM file.
+// TestNetpbmDecodePlainPPM determines if netpbm.Decode can decode a
+// plain PPM file.
 func TestNetpbmDecodePlainPPM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(ppmPlain))
 	defer r.Close()
@@ -571,8 +577,8 @@ func TestNetpbmDecodePlainPPM(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodePlainPPMOpts determines if netpbm.Decode can decode a plain PPM
-// file with non-default options.
+// TestNetpbmDecodePlainPPMOpts determines if netpbm.Decode can decode a
+// plain PPM file with non-default options.
 func TestNetpbmDecodePlainPPMOpts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(ppmPlain))
 	defer r.Close()
@@ -588,14 +594,14 @@ func TestNetpbmDecodePlainPPMOpts(t *testing.T) {
 	}
 }
 
-// TestNetpbmEncodePlainPPM confirms that encoding and decoding do not alter a plain
-// PPM file.
+// TestNetpbmEncodePlainPPM confirms that encoding and decoding do not alter
+// a plain PPM file.
 func TestNetpbmEncodePlainPPM(t *testing.T) {
 	repeatDecodeEncode(t, ppmPlain, nil, nil)
 }
 
-// TestNetpbmEncodePlainPPMAsPNM confirms that encoding and decoding do not alter a
-// plain PPM file when treated as PNM.
+// TestNetpbmEncodePlainPPMAsPNM confirms that encoding and decoding do not
+// alter a plain PPM file when treated as PNM.
 func TestNetpbmEncodePlainPPMAsPNM(t *testing.T) {
 	dOpts := &DecodeOptions{Target: PNM}
 	eOpts := &EncodeOptions{Format: PNM}
@@ -653,7 +659,8 @@ func TestNetpbmDecodeRawPAMConfig(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodeRawPAM determines if netpbm.Decode can decode a raw PAM file.
+// TestNetpbmDecodeRawPAM determines if netpbm.Decode can decode a
+// raw PAM file.
 func TestNetpbmDecodeRawPAM(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pamRawColor))
 	defer r.Close()
@@ -669,8 +676,8 @@ func TestNetpbmDecodeRawPAM(t *testing.T) {
 	}
 }
 
-// TestNetpbmDecodeRawPAMOpts determines if netpbm.Decode can decode a raw PAM
-// file with non-default options.
+// TestNetpbmDecodeRawPAMOpts determines if netpbm.Decode can decode a
+// raw PAM file with non-default options.
 func TestNetpbmDecodeRawPAMOpts(t *testing.T) {
 	r := flate.NewReader(bytes.NewBufferString(pamRawColor))
 	defer r.Close()
@@ -686,16 +693,115 @@ func TestNetpbmDecodeRawPAMOpts(t *testing.T) {
 	}
 }
 
-// TestNetpbmEncodeRawPAM confirms that encoding and decoding do not alter a raw
-// PAM file.
+// TestNetpbmEncodeRawPAM confirms that encoding and decoding do not alter
+// a raw PAM file.
 func TestNetpbmEncodeRawPAM(t *testing.T) {
 	repeatDecodeEncode(t, pamRawColor, nil, nil)
 }
 
-// TestNetpbmEncodeRawPAMAsPNM confirms that encoding and decoding do not alter a
-// raw PAM file when treated as PNM.
+// TestNetpbmEncodeRawPAMAsPNM confirms that encoding and decoding do not
+// alter a raw PAM file when treated as PNM.
 func TestNetpbmEncodeRawPAMAsPNM(t *testing.T) {
 	dOpts := &DecodeOptions{Target: PNM}
 	eOpts := &EncodeOptions{Format: PNM}
 	repeatDecodeEncode(t, pamRawColor, dOpts, eOpts)
+}
+
+// TestDecodeRawPAMAlphaConfig determines if image.DecodeConfig can decode
+// the configuration of a raw PAM file.
+func TestDecodeRawPAMAlphaConfig(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pamRawColorAlpha))
+	defer r.Close()
+	cfg, str, err := image.DecodeConfig(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if str != "pam" {
+		t.Fatalf("Expected \"pam\" but received %q", str)
+	}
+	if cfg.Width != 64 || cfg.Height != 64 {
+		t.Fatalf("Expected a 64x64 image but received %dx%d", cfg.Width, cfg.Height)
+	}
+}
+
+// TestDecodeRawPAMAlpha determines if image.Decode can decode a raw PAM file.
+func TestDecodeRawPAMAlpha(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pamRawColorAlpha))
+	defer r.Close()
+	img, str, err := image.Decode(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if str != "pam" {
+		t.Fatalf("Expected pam but received %s", str)
+	}
+	nimg, ok := img.(Image)
+	if !ok {
+		t.Fatal("Image is not a Netpam image")
+	}
+	if nimg.MaxValue() != 255 {
+		t.Fatalf("Expected a maximum value of 255 but received %d", nimg.MaxValue())
+	}
+}
+
+// TestNetpbmDecodeRawPAMAlphaConfig determines if netpbm.DecodeConfig can
+// decode the configuration of a raw PAM file.
+func TestNetpbmDecodeRawPAMAlphaConfig(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pamRawColorAlpha))
+	defer r.Close()
+	cfg, err := DecodeConfig(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Width != 64 || cfg.Height != 64 {
+		t.Fatalf("Expected a 64x64 image but received %dx%d", cfg.Width, cfg.Height)
+	}
+}
+
+// TestNetpbmDecodeRawPAMAlpha determines if netpbm.Decode can decode a
+// raw PAM file.
+func TestNetpbmDecodeRawPAMAlpha(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pamRawColorAlpha))
+	defer r.Close()
+	img, err := Decode(r, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PPM {
+		t.Fatalf("Expected PPM but received %s", img.Format())
+	}
+	if img.MaxValue() != 255 {
+		t.Fatalf("Expected a maximum value of 255 but received %d", img.MaxValue())
+	}
+}
+
+// TestNetpbmDecodeRawPAMAlphaOpts determines if netpbm.Decode can decode a
+// raw PAM file with non-default options.
+func TestNetpbmDecodeRawPAMAlphaOpts(t *testing.T) {
+	r := flate.NewReader(bytes.NewBufferString(pamRawColorAlpha))
+	defer r.Close()
+	img, err := Decode(r, &DecodeOptions{
+		Target: PPM,
+		Exact:  true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Format() != PPM {
+		t.Fatalf("Expected PPM but received %s", img.Format())
+	}
+}
+
+// TestNetpbmEncodeRawPAMAlpha confirms that encoding and decoding do not alter
+// a raw PAM file.
+func TestNetpbmEncodeRawPAMAlpha(t *testing.T) {
+	repeatDecodeEncode(t, pamRawColorAlpha, nil, nil)
+}
+
+// TestNetpbmEncodeRawPAMAlphaAsPNM confirms that encoding and decoding do not
+// alter a raw PAM file when treated as PNM.
+func TestNetpbmEncodeRawPAMAlphaAsPNM(t *testing.T) {
+	dOpts := &DecodeOptions{Target: PNM}
+	eOpts := &EncodeOptions{Format: PNM}
+	repeatDecodeEncode(t, pamRawColorAlpha, dOpts, eOpts)
 }
