@@ -704,3 +704,35 @@ func encodeRGBA64Data(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	}
 	return writeRawData(w, samples, 2)
 }
+
+// A dummyColor implements the color.Color interface.
+type dummyColor struct{}
+
+// RGBA returns a constant non-gray color that's less than 50% opaque.
+func (c dummyColor) RGBA() (uint32, uint32, uint32, uint32) {
+	return 0x4000, 0x5000, 0x6000, 0x7000
+}
+
+// inferTupleType maps a color model to a tuple-type string.
+func inferTupleType(m color.Model) string {
+	// Convert a dummy color to the given model and from that to
+	// red, green, blue, and alpha values.
+	c := m.Convert(dummyColor{})
+	r, g, b, a := c.RGBA()
+
+	// Infer the tuple type from the resulting color.
+	tt := "RGB"
+	if r == g && g == b {
+		// If all colors equal 0 or 1, assume black and white.
+		// Otherwise, assume grayscale.
+		if r == 0 || r == 1 {
+			tt = "BLACKANDWHITE"
+		} else {
+			tt = "GRAYSCALE"
+		}
+	}
+	if a > 0 {
+		tt += "_ALPHA"
+	}
+	return tt
+}

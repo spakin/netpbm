@@ -583,10 +583,10 @@ func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 		}
 	}
 
-	// If Format is PAM and TupleType is not specified, default to
-	// RGB_ALPHA.
+	// If Format is PAM and TupleType is not specified, infer the tuple
+	// type from the image type.
 	if o.Format == PAM && o.TupleType == "" {
-		o.TupleType = "RGB_ALPHA"
+		o.TupleType = inferTupleType(img.ColorModel())
 	}
 
 	// If MaxValue is 0, replace it with an intelligently selected maximum
