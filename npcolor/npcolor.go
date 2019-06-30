@@ -179,10 +179,10 @@ type RGBAM struct {
 // RGBA converts an RGBAM to alpha-premultiplied R, G, B, and A.
 func (c RGBAM) RGBA() (r, g, b, a uint32) {
 	m := uint32(c.M)
-	r = (uint32(c.R)*0xffff + m/2) / m
-	g = (uint32(c.G)*0xffff + m/2) / m
-	b = (uint32(c.B)*0xffff + m/2) / m
 	a = (uint32(c.A)*0xffff + m/2) / m
+	r = (uint32(c.R)*a + m/2) / m
+	g = (uint32(c.G)*a + m/2) / m
+	b = (uint32(c.B)*a + m/2) / m
 	return
 }
 
@@ -215,10 +215,10 @@ type RGBAM64 struct {
 // RGBA converts an RGBAM64 to alpha-premultiplied R, G, B, and A.
 func (c RGBAM64) RGBA() (r, g, b, a uint32) {
 	m := uint32(c.M)
-	r = (uint32(c.R)*0xffff + m/2) / m
-	g = (uint32(c.G)*0xffff + m/2) / m
-	b = (uint32(c.B)*0xffff + m/2) / m
 	a = (uint32(c.A)*0xffff + m/2) / m
+	r = (uint32(c.R)*a + m/2) / m
+	g = (uint32(c.G)*a + m/2) / m
+	b = (uint32(c.B)*a + m/2) / m
 	return
 }
 

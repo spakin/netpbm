@@ -161,3 +161,125 @@ func TestRGBM64ToFrom(t *testing.T) {
 		}
 	}
 }
+
+// TestRGBM64Premult tests that RGBA returns a properly alpha-premultiplied
+// value for an RGBM64 color.
+func TestRGBM64Premult(t *testing.T) {
+	for i := 0; i < numConversions; i++ {
+		m := rand.Intn(65535) + 1 // [1, 65535]
+		rm := rand.Intn(m + 1)    // [0, m]
+		gm := rand.Intn(m + 1)    // [0, m]
+		bm := rand.Intn(m + 1)    // [0, m]
+		c := RGBM64{
+			R: uint16(rm),
+			G: uint16(gm),
+			B: uint16(bm),
+			M: uint16(m),
+		}
+		r, g, b, a := c.RGBA()
+		if r > a || g > a || b > a {
+			t.Fatalf("RGBA color [%d, %d, %d, %d] is not alpha-premultiplied", r, g, b, a)
+		}
+	}
+}
+
+// TestRGBMPremult tests that RGBA returns a properly alpha-premultiplied value
+// for an RGBM color.
+func TestRGBMPremult(t *testing.T) {
+	for i := 0; i < numConversions; i++ {
+		m := rand.Intn(255) + 1 // [1, 255]
+		rm := rand.Intn(m + 1)  // [0, m]
+		gm := rand.Intn(m + 1)  // [0, m]
+		bm := rand.Intn(m + 1)  // [0, m]
+		c := RGBM{
+			R: uint8(rm),
+			G: uint8(gm),
+			B: uint8(bm),
+			M: uint8(m),
+		}
+		r, g, b, a := c.RGBA()
+		if r > a || g > a || b > a {
+			t.Fatalf("RGBA color [%d, %d, %d, %d] is not alpha-premultiplied", r, g, b, a)
+		}
+	}
+}
+
+// TestGrayM32Premult tests that RGBA returns a properly alpha-premultiplied
+// value for an GrayM32 color.
+func TestGrayM32Premult(t *testing.T) {
+	for i := 0; i < numConversions; i++ {
+		m := rand.Intn(65535) + 1 // [1, 65535]
+		ym := rand.Intn(m + 1)    // [0, m]
+		c := GrayM32{
+			Y: uint16(ym),
+			M: uint16(m),
+		}
+		r, g, b, a := c.RGBA()
+		if r > a || g > a || b > a {
+			t.Fatalf("RGBA color [%d, %d, %d, %d] is not alpha-premultiplied", r, g, b, a)
+		}
+	}
+}
+
+// TestGrayMPremult tests that RGBA returns a properly alpha-premultiplied value
+// for an GrayM color.
+func TestGrayMPremult(t *testing.T) {
+	for i := 0; i < numConversions; i++ {
+		m := rand.Intn(255) + 1 // [1, 255]
+		ym := rand.Intn(m + 1)  // [0, m]
+		c := GrayM{
+			Y: uint8(ym),
+			M: uint8(m),
+		}
+		r, g, b, a := c.RGBA()
+		if r > a || g > a || b > a {
+			t.Fatalf("RGBA color [%d, %d, %d, %d] is not alpha-premultiplied", r, g, b, a)
+		}
+	}
+}
+
+// TestRGBAM64Premult tests that RGBA returns a properly alpha-premultiplied
+// value for an RGBAM64 color.
+func TestRGBAM64Premult(t *testing.T) {
+	for i := 0; i < numConversions; i++ {
+		m := rand.Intn(65535) + 1 // [1, 65535]
+		rm := rand.Intn(m + 1)    // [0, m]
+		gm := rand.Intn(m + 1)    // [0, m]
+		bm := rand.Intn(m + 1)    // [0, m]
+		am := rand.Intn(m + 1)    // [0, m]
+		c := RGBAM64{
+			R: uint16(rm),
+			G: uint16(gm),
+			B: uint16(bm),
+			A: uint16(am),
+			M: uint16(m),
+		}
+		r, g, b, a := c.RGBA()
+		if r > a || g > a || b > a {
+			t.Fatalf("RGBA color [%d, %d, %d, %d] is not alpha-premultiplied", r, g, b, a)
+		}
+	}
+}
+
+// TestRGBAMPremult tests that RGBA returns a properly alpha-premultiplied value
+// for an RGBAM color.
+func TestRGBAMPremult(t *testing.T) {
+	for i := 0; i < numConversions; i++ {
+		m := rand.Intn(255) + 1 // [1, 255]
+		rm := rand.Intn(m + 1)  // [0, m]
+		gm := rand.Intn(m + 1)  // [0, m]
+		bm := rand.Intn(m + 1)  // [0, m]
+		am := rand.Intn(m + 1)  // [0, m]
+		c := RGBAM{
+			R: uint8(rm),
+			G: uint8(gm),
+			B: uint8(bm),
+			A: uint8(am),
+			M: uint8(m),
+		}
+		r, g, b, a := c.RGBA()
+		if r > a || g > a || b > a {
+			t.Fatalf("RGBA color [%d, %d, %d, %d] is not alpha-premultiplied", r, g, b, a)
+		}
+	}
+}
