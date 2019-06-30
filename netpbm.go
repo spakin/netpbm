@@ -22,6 +22,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/spakin/netpbm/npcolor"
 	"image"
 	"image/color"
 	"io"
@@ -510,10 +511,24 @@ func DecodeWithComments(r io.Reader, opts *DecodeOptions) (Image, []string, erro
 		return nil, nil, err
 	}
 
-	// A PNM target accepts any of PBM, PGM, or PPM as is.
+	// A PAM target accepts any image type as is.
 	nimg := img.(Image)
-	if o.Target == PNM {
+	if o.Target == PAM {
 		return nimg, comments, nil
+	}
+
+	// A PNM target accepts any images as is, except that it discards the
+	// alpha channel.
+	if o.Target == PNM {
+		if !nimg.HasAlpha() {
+			return nimg, comments, nil
+		}
+		var ok bool
+		nimg, ok = RemoveAlpha(nimg)
+		if ok {
+			return nimg, comments, nil
+		}
+		return nil, nil, errors.New("Failed to remove the alpha channel")
 	}
 
 	// If requested, promote the image to a richer format.  We've already
@@ -677,4 +692,34 @@ func writeRawData(w io.Writer, ch chan uint16, wd int) error {
 	}
 	wb.Flush()
 	return nil
+}
+
+// RemoveAlpha removes the alpha channel from a Netpbm image.  It returns a new
+// image and a success code.  If the input image does not have an alpha
+// channel, this is considered failure.
+func RemoveAlpha(img Image) (Image, bool) {
+	// Allocate a new image.
+	if !img.HasAlpha() {
+		return nil, false
+	}
+	var nimg Image
+	r := img.Bounds()
+	switch img.ColorModel().(type) {
+	case npcolor.RGBAMModel:
+		nimg = NewRGBM(r, uint8(img.MaxValue()))
+	case npcolor.RGBAM64Model:
+		nimg = NewRGBM64(r, img.MaxValue())
+	default:
+		panic(fmt.Sprintf("Removing the alpha channel from a %s image is not yet implemented", img.Format()))
+	}
+
+	// Copy the old image to the new pixel-by-pixel.
+	ul := r.Min
+	lr := r.Max
+	for j := ul.X; j <= lr.X; j++ {
+		for i := ul.Y; i <= lr.Y; i++ {
+			nimg.Set(i, j, img.At(i, j))
+		}
+	}
+	return nimg, true
 }

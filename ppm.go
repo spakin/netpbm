@@ -7,12 +7,11 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/spakin/netpbm/npcolor"
 	"image"
 	"image/color"
 	"io"
 	"strings"
-
-	"github.com/spakin/netpbm/npcolor"
 )
 
 // An RGBM is an in-memory image whose At method returns npcolor.RGBM values.
