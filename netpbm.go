@@ -723,3 +723,33 @@ func RemoveAlpha(img Image) (Image, bool) {
 	}
 	return nimg, true
 }
+
+// AddAlpha adds an alpha channel to a Netpbm image.  It returns a new image
+// and a success code.  If the input image already has an alpha channel, this
+// is considered failure.
+func AddAlpha(img Image) (Image, bool) {
+	// Allocate a new image.
+	if img.HasAlpha() {
+		return nil, false
+	}
+	var nimg Image
+	r := img.Bounds()
+	switch img.ColorModel().(type) {
+	case npcolor.RGBMModel:
+		nimg = NewRGBAM(r, uint8(img.MaxValue()))
+	case npcolor.RGBM64Model:
+		nimg = NewRGBAM64(r, img.MaxValue())
+	default:
+		panic(fmt.Sprintf("Removing the alpha channel from a %s image is not yet implemented", img.Format()))
+	}
+
+	// Copy the old image to the new pixel-by-pixel.
+	ul := r.Min
+	lr := r.Max
+	for j := ul.X; j <= lr.X; j++ {
+		for i := ul.Y; i <= lr.Y; i++ {
+			nimg.Set(i, j, img.At(i, j))
+		}
+	}
+	return nimg, true
+}
