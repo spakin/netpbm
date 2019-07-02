@@ -725,13 +725,13 @@ func inferTupleType(m color.Model) string {
 	if r == g && g == b {
 		// If all colors equal 0 or 1, assume black and white.
 		// Otherwise, assume grayscale.
-		if r == 0 || r == 1 {
+		if r == 0 || r == a {
 			tt = "BLACKANDWHITE"
 		} else {
 			tt = "GRAYSCALE"
 		}
 	}
-	if a > 0 {
+	if a < 0xffff {
 		tt += "_ALPHA"
 	}
 	return tt
