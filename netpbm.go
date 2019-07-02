@@ -708,7 +708,7 @@ func AddAlpha(img Image) (Image, bool) {
 	case npcolor.RGBM64Model:
 		nimg = NewRGBAM64(r, img.MaxValue())
 	default:
-		panic(fmt.Sprintf("Removing the alpha channel from a %s image is not yet implemented", img.Format()))
+		panic(fmt.Sprintf("Adding an alpha channel to a %s image is not yet implemented", img.Format()))
 	}
 
 	// Copy the old image to the new pixel-by-pixel.
