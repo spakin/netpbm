@@ -123,38 +123,6 @@ func (nr *netpbmReader) GetNextInt() int {
 	return value
 }
 
-// GetNextString returns the next string from the Netpbm file.
-func (nr *netpbmReader) GetNextString() string {
-	var c rune
-	for nr.err == nil && !unicode.IsLetter(c) {
-		for c = nr.GetNextByteAsRune(); unicode.IsSpace(c); c = nr.GetNextByteAsRune() {
-		}
-		if c == '#' {
-			// Comment -- discard the rest of the line.
-			for c = nr.GetNextByteAsRune(); c != '\n'; c = nr.GetNextByteAsRune() {
-			}
-		}
-	}
-	if nr.err != nil {
-		return ""
-	}
-
-	sb := strings.Builder{}
-	sb.WriteRune(c)
-
-	for c = nr.GetNextByteAsRune(); unicode.IsLetter(c) || unicode.IsPunct(c); c = nr.GetNextByteAsRune() {
-		_, nr.err = sb.WriteRune(c)
-	}
-	if nr.err != nil && nr.err != io.EOF {
-		return ""
-	}
-	nr.err = nr.UnreadByte()
-	if nr.err != nil {
-		return ""
-	}
-	return sb.String()
-}
-
 // GetIntsAndComments returns n integers and a list of comments encountered
 // along the way.  Comments discard the initial "#" and up to one subsequent
 // whitespace character as well as the final carriage return and/or line feed.
