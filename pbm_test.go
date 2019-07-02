@@ -1,4 +1,4 @@
-// Test PBM files
+// Test PBM files.
 
 package netpbm
 

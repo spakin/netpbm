@@ -146,3 +146,58 @@ func TestGetNextInt(t *testing.T) {
 		}
 	}
 }
+
+// addRemoveAlpha confirms that adding an alpha channel and then removing it
+// does not alter a NetPBM image.
+func addRemoveAlpha(t *testing.T, imgStr string, dOpts *DecodeOptions, eOpts *EncodeOptions) {
+	// Decode a raw NetPBM image.
+	r1 := flate.NewReader(bytes.NewBufferString(imgStr))
+	img0, _, err := image.Decode(r1)
+	r1.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Add an alpha channel.
+	imgA, ok := AddAlpha(img0.(Image))
+	if !ok {
+		t.Fatal("Failed to add an alpha channel")
+	}
+	if !imgA.HasAlpha() {
+		t.Fatal("Image claims not to have an alpha channel after adding one")
+	}
+
+	// Remove the alpha channel.
+	img1, ok := RemoveAlpha(imgA.(Image))
+	if !ok {
+		t.Fatal("Failed to remove an alpha channel")
+	}
+	if img1.HasAlpha() {
+		t.Fatal("Image claims to have an alpha channel after removing it")
+	}
+
+	// Ensure the before (img0) and after (img1) images' metadata match.
+	if img0.ColorModel() != img1.ColorModel() {
+		t.Fatal("Color model changed")
+	}
+	bnd0 := img0.Bounds()
+	bnd1 := img1.Bounds()
+	if bnd0.Min.X != bnd1.Min.X || bnd0.Min.Y != bnd1.Min.Y ||
+		bnd0.Max.X != bnd1.Max.X || bnd0.Max.Y != bnd1.Max.Y {
+		t.Fatalf("Image bounds changed from %v to %v", bnd0, bnd1)
+	}
+
+	// Ensure the before (img0) and after (img1) images' data match.
+	for y := bnd0.Min.Y; y < bnd0.Max.Y; y++ {
+		for x := bnd0.Min.X; x < bnd0.Max.X; x++ {
+			c0 := img0.At(x, y)
+			c1 := img1.At(x, y)
+			r0, g0, b0, a0 := c0.RGBA()
+			r1, g1, b1, a1 := c1.RGBA()
+			if r0 != r1 || g0 != g1 || b0 != b1 || a0 != a1 {
+				t.Fatalf("Color at (%d, %d) changed from [%d, %d, %d, %d] to [%d, %d, %d, %d]",
+					x, y, r0, g0, b0, a0, r1, g1, b1, a1)
+			}
+		}
+	}
+}

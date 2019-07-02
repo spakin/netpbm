@@ -607,7 +607,7 @@ func encodePAM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 	fmt.Fprintf(w, "TUPLTYPE %s\n", opts.TupleType)
 	fmt.Fprintf(w, "ENDHDR\n")
 
-	// Write the PPM data.
+	// Write the PAM data.
 	if opts.MaxValue < 256 {
 		switch ttype {
 		case pamColorAlpha:
