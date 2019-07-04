@@ -677,6 +677,10 @@ func RemoveAlpha(img Image) (Image, bool) {
 		nimg = NewRGBM(r, uint8(img.MaxValue()))
 	case npcolor.RGBAM64Model:
 		nimg = NewRGBM64(r, img.MaxValue())
+	case npcolor.GrayAMModel:
+		nimg = NewGrayM(r, uint8(img.MaxValue()))
+	case npcolor.GrayAM48Model:
+		nimg = NewGrayM32(r, img.MaxValue())
 	default:
 		panic(fmt.Sprintf("Removing the alpha channel from a %s image is not yet implemented", img.Format()))
 	}

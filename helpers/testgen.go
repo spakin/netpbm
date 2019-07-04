@@ -29,6 +29,7 @@ var AllConfigs = []NetpbmType{
 	{Fmt: "PPM", BaseFmt: "PPM", Plain: false, Width: 64, Height: 64, Maxval: 255, Image: "ppmRaw"},
 	{Fmt: "PPM", BaseFmt: "PPM", Plain: true, Width: 63, Height: 65, Maxval: 777, Image: "ppmPlain"},
 	{Fmt: "PAM", BaseFmt: "PPM", Plain: false, Width: 64, Height: 64, Maxval: 255, Image: "pamRawColor"},
+	{Fmt: "PAM", BaseFmt: "PGM", Plain: false, Width: 64, Height: 64, Maxval: 255, Image: "pamRawGrayAlpha", Suffix: "GrayAlpha"},
 	{Fmt: "PAM", BaseFmt: "PPM", Plain: false, Width: 64, Height: 64, Maxval: 255, Image: "pamRawColorAlpha", Suffix: "Alpha"},
 }
 

@@ -435,8 +435,7 @@ func decodeConfigPAMWithComments(r io.Reader) (image.Config, []string, error) {
 		case pamColor:
 			cfg.ColorModel = npcolor.RGBMModel{M: uint8(header.Maxval)}
 		case pamGrayscaleAlpha:
-			// TODO: Implement grayscale + alpha
-			panic("Grayscale + alpha is not currently supported")
+			cfg.ColorModel = npcolor.GrayAMModel{M: uint8(header.Maxval)}
 		case pamGrayscale:
 			cfg.ColorModel = npcolor.GrayMModel{M: uint8(header.Maxval)}
 		case pamBlackAndWhiteAlpha:
@@ -458,8 +457,7 @@ func decodeConfigPAMWithComments(r io.Reader) (image.Config, []string, error) {
 		case pamColor:
 			cfg.ColorModel = npcolor.RGBM64Model{M: uint16(header.Maxval)}
 		case pamGrayscaleAlpha:
-			// TODO: Implement grayscale + alpha
-			panic("Grayscale + alpha is not currently supported")
+			cfg.ColorModel = npcolor.GrayAM48Model{M: uint16(header.Maxval)}
 		case pamGrayscale:
 			cfg.ColorModel = npcolor.GrayM32Model{M: uint16(header.Maxval)}
 		case pamBlackAndWhiteAlpha:
@@ -511,6 +509,12 @@ func decodePAMWithComments(r io.Reader) (image.Image, []string, error) {
 		data = pImg.Pix
 		img = pImg
 
+	case npcolor.GrayAMModel:
+		maxVal = uint(model.M)
+		pImg := NewGrayAM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
+		data = pImg.Pix
+		img = pImg
+
 	case npcolor.GrayMModel:
 		maxVal = uint(model.M)
 		pImg := NewGrayM(image.Rect(0, 0, config.Width, config.Height), uint8(maxVal))
@@ -526,6 +530,12 @@ func decodePAMWithComments(r io.Reader) (image.Image, []string, error) {
 	case npcolor.RGBM64Model:
 		maxVal = uint(model.M)
 		pImg := NewRGBM64(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
+		data = pImg.Pix
+		img = pImg
+
+	case npcolor.GrayAM48Model:
+		maxVal = uint(model.M)
+		pImg := NewGrayAM48(image.Rect(0, 0, config.Width, config.Height), uint16(maxVal))
 		data = pImg.Pix
 		img = pImg
 
