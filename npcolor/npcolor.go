@@ -29,6 +29,13 @@ bound of 255, npcolor.GrayM supports any upper bound from 1–255.
 Likewise, while a color.Gray16 value has a hard-wired upper bound of
 65,535, npcolor.GrayM32 supports any upper bound from 1–65,535.
 
+GrayAM and GrayAM32 have no analogue in the color package.  They
+represent, respectively, 8-bit and 16-bit grayscale values with an
+alpha channel.  Like the other colors represented in this package,
+these support variable maximum channel values.  npcolor.GrayAM
+supports any upper bound from 1–255, and npcolor.GrayM32 supports any
+upper bound from 1–65,535.
+
 */
 package npcolor
 
@@ -168,6 +175,72 @@ func (model RGBM64Model) Convert(c color.Color) color.Color {
 	g = (g*m + half) / 0xffff
 	b = (b*m + half) / 0xffff
 	return RGBM64{R: uint16(r), G: uint16(g), B: uint16(b), M: uint16(m)}
+}
+
+// GrayAM represents an 8-bit grayscale value with an alpha channel and the
+// value to represent 100% white.
+type GrayAM struct {
+	Y, A, M uint8
+}
+
+// RGBA converts a GrayAM to alpha-premultiplied R, G, B, and A.
+func (c GrayAM) RGBA() (r, g, b, a uint32) {
+	m := uint32(c.M)
+	a = (uint32(c.A)*0xffff + m/2) / m
+	y := (uint32(c.Y)*a + m/2) / m
+	return y, y, y, a
+}
+
+// A GrayAMModel represents the maximum value of a GrayAM (0-255).
+type GrayAMModel struct {
+	M uint8 // Maximum value of the luminance channel
+}
+
+// Convert converts an arbitrary color to a GrayAM.
+func (model GrayAMModel) Convert(c color.Color) color.Color {
+	if gray, ok := c.(GrayAM); ok && gray.M == model.M {
+		return c
+	}
+	r, g, b, a := c.RGBA()
+	y := (299*r + 587*g + 114*b + 500) / 1000
+	m := uint32(model.M)
+	const half = 0xffff / 2
+	y = (y*m + half) / 0xffff
+	a = (a*m + half) / 0xffff
+	return GrayAM{Y: uint8(y), A: uint8(a), M: uint8(m)}
+}
+
+// GrayAM48 represents a 16-bit grayscale value with an alpha channel and the
+// value to represent 100% white.
+type GrayAM48 struct {
+	Y, A, M uint16
+}
+
+// RGBA converts a GrayAM48 to alpha-premultiplied R, G, B, and A.
+func (c GrayAM48) RGBA() (r, g, b, a uint32) {
+	m := uint32(c.M)
+	a = (uint32(c.A)*0xffff + m/2) / m
+	y := (uint32(c.Y)*a + m/2) / m
+	return y, y, y, a
+}
+
+// A GrayAM48Model represents the maximum value of a GrayAM48 (0-65535).
+type GrayAM48Model struct {
+	M uint16 // Maximum value of the luminance channel
+}
+
+// Convert converts an arbitrary color to a GrayAM48.
+func (model GrayAM48Model) Convert(c color.Color) color.Color {
+	if gray, ok := c.(GrayAM48); ok && gray.M == model.M {
+		return c
+	}
+	r, g, b, a := c.RGBA()
+	y := (299*r + 587*g + 114*b + 500) / 1000
+	m := uint32(model.M)
+	const half = 0xffff / 2
+	y = (y*m + half) / 0xffff
+	a = (a*m + half) / 0xffff
+	return GrayAM48{Y: uint16(y), A: uint16(a), M: uint16(m)}
 }
 
 // RGBAM represents a 32-bit color and the value used for 100% of a color

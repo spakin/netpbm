@@ -723,7 +723,7 @@ func inferTupleType(m color.Model) string {
 	// Infer the tuple type from the resulting color.
 	tt := "RGB"
 	if r == g && g == b {
-		// If all colors equal 0 or 1, assume black and white.
+		// If all colors equal 0 or max, assume black and white.
 		// Otherwise, assume grayscale.
 		if r == 0 || r == a {
 			tt = "BLACKANDWHITE"
