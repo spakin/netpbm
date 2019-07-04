@@ -42,7 +42,7 @@ var ttToInt = map[string]pamTupleType{
 // values.
 type RGBAM struct {
 	// Pix holds the image's pixels, in R, G, B (no M) order. The pixel at
-	// (x, y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*3].
+	// (x, y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*4].
 	Pix []uint8
 	// Stride is the Pix stride (in bytes) between vertically adjacent
 	// pixels.
@@ -182,7 +182,7 @@ func NewRGBAM(r image.Rectangle, m uint8) *RGBAM {
 // A RGBAM64 is an in-memory image whose At method returns npcolor.RGBAM64
 // values.
 type RGBAM64 struct {
-	// Pix holds the image's pixels, in R, G, B, M order and big-endian
+	// Pix holds the image's pixels, in R, G, B, A order and big-endian
 	// format. The pixel at (x, y) starts at Pix[(y-Rect.Min.Y)*Stride +
 	// (x-Rect.Min.X)*8].
 	Pix []uint8
@@ -248,7 +248,7 @@ func (p *RGBAM64) Set(x, y int, c color.Color) {
 }
 
 // SetRGBAM64 sets the pixel at (x, y) to a given color, expressed as an
-// npcolor.RGBAM.
+// npcolor.RGBAM64.
 func (p *RGBAM64) SetRGBAM64(x, y int, c npcolor.RGBAM64) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
@@ -735,4 +735,279 @@ func inferTupleType(m color.Model) string {
 		tt += "_ALPHA"
 	}
 	return tt
+}
+
+// A GrayAM is an in-memory image whose At method returns npcolor.GrayAM
+// values.
+type GrayAM struct {
+	// Pix holds the image's pixels in Y, A order. The pixel at (x, y)
+	// starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*2].
+	Pix []uint8
+	// Stride is the Pix stride (in bytes) between vertically adjacent
+	// pixels.
+	Stride int
+	// Rect is the image's bounds.
+	Rect image.Rectangle
+	// Model is the image's color model.
+	Model npcolor.GrayAMModel
+}
+
+// ColorModel returns the GrayAM image's color model.
+func (p *GrayAM) ColorModel() color.Model { return p.Model }
+
+// Bounds returns the domain for which At can return non-zero color.  The
+// bounds do not necessarily contain the point (0, 0).
+func (p *GrayAM) Bounds() image.Rectangle { return p.Rect }
+
+// At returns the color of the pixel at (x, y) as a color.Color.
+// At(Bounds().Min.X, Bounds().Min.Y) returns the upper-left pixel of the grid.
+// At(Bounds().Max.X-1, Bounds().Max.Y-1) returns the lower-right one.
+func (p *GrayAM) At(x, y int) color.Color {
+	return p.GrayAMAt(x, y)
+}
+
+// GrayAMAt returns the color of the pixel at (x, y) as an npcolor.GrayAM.
+func (p *GrayAM) GrayAMAt(x, y int) npcolor.GrayAM {
+	if !(image.Point{x, y}.In(p.Rect)) {
+		return npcolor.GrayAM{}
+	}
+	i := p.PixOffset(x, y)
+	return npcolor.GrayAM{
+		Y: p.Pix[i+0],
+		A: p.Pix[i+1],
+		M: p.Model.M,
+	}
+}
+
+// PixOffset returns the index of the first element of Pix that corresponds to
+// the pixel at (x, y).
+func (p *GrayAM) PixOffset(x, y int) int {
+	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*2
+}
+
+// Set sets the pixel at (x, y) to a given color, expressed as a color.Color.
+func (p *GrayAM) Set(x, y int, c color.Color) {
+	if !(image.Point{x, y}.In(p.Rect)) {
+		return
+	}
+	i := p.PixOffset(x, y)
+	c1 := p.Model.Convert(c).(npcolor.GrayAM)
+	p.Pix[i+0] = c1.Y
+	p.Pix[i+1] = c1.A
+}
+
+// SetGrayAM sets the pixel at (x, y) to a given color, expressed as an
+// npcolor.GrayAM.
+func (p *GrayAM) SetGrayAM(x, y int, c npcolor.GrayAM) {
+	if !(image.Point{x, y}.In(p.Rect)) {
+		return
+	}
+	i := p.PixOffset(x, y)
+	if c.M == p.Model.M {
+		p.Pix[i+0] = c.Y
+		p.Pix[i+1] = c.A
+	} else {
+		p.Set(x, y, c)
+	}
+}
+
+// SubImage returns an image representing the portion of the image p visible
+// through r. The returned value shares pixels with the original image.
+func (p *GrayAM) SubImage(r image.Rectangle) image.Image {
+	r = r.Intersect(p.Rect)
+	// If r1 and r2 are Rectangles, r1.Intersect(r2) is not guaranteed to
+	// be inside either r1 or r2 if the intersection is empty. Without
+	// explicitly checking for this, the Pix[i:] expression below can
+	// panic.
+	if r.Empty() {
+		return &GrayAM{}
+	}
+	i := p.PixOffset(r.Min.X, r.Min.Y)
+	return &GrayAM{
+		Pix:    p.Pix[i:],
+		Stride: p.Stride,
+		Rect:   r,
+	}
+}
+
+// Opaque scans the entire image and reports whether it is fully opaque.
+func (p *GrayAM) Opaque() bool {
+	if p.Rect.Empty() {
+		return true
+	}
+	i0, i1 := 1, p.Rect.Dx()*2
+	for y := p.Rect.Min.Y; y < p.Rect.Max.Y; y++ {
+		for i := i0; i < i1; i += 2 {
+			if p.Pix[i] != 0xff {
+				return false
+			}
+		}
+		i0 += p.Stride
+		i1 += p.Stride
+	}
+	return true
+}
+
+// MaxValue returns the maximum value allowed on any color channel.
+func (p *GrayAM) MaxValue() uint16 {
+	return uint16(p.Model.M)
+}
+
+// Format identifies the image as a PGM image.
+func (p *GrayAM) Format() Format {
+	return PGM
+}
+
+// HasAlpha indicates that there is an alpha channel.
+func (p *GrayAM) HasAlpha() bool {
+	return true
+}
+
+// NewGrayAM returns a new GrayAM with the given bounds and maximum channel
+// value.
+func NewGrayAM(r image.Rectangle, m uint8) *GrayAM {
+	w, h := r.Dx(), r.Dy()
+	pix := make([]uint8, 2*w*h)
+	model := npcolor.GrayAMModel{M: m}
+	return &GrayAM{pix, 2 * w, r, model}
+}
+
+// A GrayAM48 is an in-memory image whose At method returns npcolor.GrayAM48
+// values.
+type GrayAM48 struct {
+	// Pix holds the image's pixels, in R, G, B, A order and big-endian
+	// format. The pixel at (x, y) starts at Pix[(y-Rect.Min.Y)*Stride +
+	// (x-Rect.Min.X)*4].
+	Pix []uint8
+	// Stride is the Pix stride (in bytes) between vertically adjacent
+	// pixels.
+	Stride int
+	// Rect is the image's bounds.
+	Rect image.Rectangle
+	// Model is the image's color model.
+	Model npcolor.GrayAM48Model
+}
+
+// ColorModel returns the GrayAM48 image's color model.
+func (p *GrayAM48) ColorModel() color.Model { return p.Model }
+
+// Bounds returns the domain for which At can return non-zero color.  The
+// bounds do not necessarily contain the point (0, 0).
+func (p *GrayAM48) Bounds() image.Rectangle { return p.Rect }
+
+// At returns the color of the pixel at (x, y) as a color.Color.
+// At(Bounds().Min.X, Bounds().Min.Y) returns the upper-left pixel of the grid.
+// At(Bounds().Max.X-1, Bounds().Max.Y-1) returns the lower-right one.
+func (p *GrayAM48) At(x, y int) color.Color {
+	return p.GrayAM48At(x, y)
+}
+
+// GrayAM48At returns the color of the pixel at (x, y) as an npcolor.GrayAM48.
+func (p *GrayAM48) GrayAM48At(x, y int) npcolor.GrayAM48 {
+	if !(image.Point{x, y}.In(p.Rect)) {
+		return npcolor.GrayAM48{}
+	}
+	i := p.PixOffset(x, y)
+	return npcolor.GrayAM48{
+		Y: uint16(p.Pix[i+0])<<8 | uint16(p.Pix[i+1]),
+		A: uint16(p.Pix[i+2])<<8 | uint16(p.Pix[i+3]),
+		M: p.Model.M,
+	}
+}
+
+// PixOffset returns the index of the first element of Pix that corresponds to
+// the pixel at (x, y).
+func (p *GrayAM48) PixOffset(x, y int) int {
+	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*4
+}
+
+// Set sets the pixel at (x, y) to a given color, expressed as a color.Color.
+func (p *GrayAM48) Set(x, y int, c color.Color) {
+	if !(image.Point{x, y}.In(p.Rect)) {
+		return
+	}
+	i := p.PixOffset(x, y)
+	c1 := p.Model.Convert(c).(npcolor.GrayAM48)
+	p.Pix[i+0] = uint8(c1.Y >> 8)
+	p.Pix[i+1] = uint8(c1.Y)
+	p.Pix[i+2] = uint8(c1.A >> 8)
+	p.Pix[i+3] = uint8(c1.A)
+}
+
+// SetGrayAM48 sets the pixel at (x, y) to a given color, expressed as an
+// npcolor.GrayAM48.
+func (p *GrayAM48) SetGrayAM48(x, y int, c npcolor.GrayAM48) {
+	if !(image.Point{x, y}.In(p.Rect)) {
+		return
+	}
+	i := p.PixOffset(x, y)
+	if c.M == p.Model.M {
+		p.Pix[i+0] = uint8(c.Y >> 8)
+		p.Pix[i+1] = uint8(c.Y)
+		p.Pix[i+2] = uint8(c.A >> 8)
+		p.Pix[i+3] = uint8(c.A)
+	} else {
+		p.Set(x, y, c)
+	}
+}
+
+// SubImage returns an image representing the portion of the image p visible
+// through r. The returned value shares pixels with the original image.
+func (p *GrayAM48) SubImage(r image.Rectangle) image.Image {
+	r = r.Intersect(p.Rect)
+	// If r1 and r2 are Rectangles, r1.Intersect(r2) is not guaranteed to
+	// be inside either r1 or r2 if the intersection is empty. Without
+	// explicitly checking for this, the Pix[i:] expression below can
+	// panic.
+	if r.Empty() {
+		return &GrayAM48{}
+	}
+	i := p.PixOffset(r.Min.X, r.Min.Y)
+	return &GrayAM48{
+		Pix:    p.Pix[i:],
+		Stride: p.Stride,
+		Rect:   r,
+	}
+}
+
+// Opaque scans the entire image and reports whether it is fully opaque.
+func (p *GrayAM48) Opaque() bool {
+	if p.Rect.Empty() {
+		return true
+	}
+	i0, i1 := 2, p.Rect.Dx()*4
+	for y := p.Rect.Min.Y; y < p.Rect.Max.Y; y++ {
+		for i := i0; i < i1; i += 4 {
+			if p.Pix[i+0] != 0xff || p.Pix[i+1] != 0xff {
+				return false
+			}
+		}
+		i0 += p.Stride
+		i1 += p.Stride
+	}
+	return true
+}
+
+// MaxValue returns the maximum value allowed on any color channel.
+func (p *GrayAM48) MaxValue() uint16 {
+	return uint16(p.Model.M)
+}
+
+// Format identifies the image as a PGM image.
+func (p *GrayAM48) Format() Format {
+	return PGM
+}
+
+// HasAlpha indicates that there is an alpha channel.
+func (p *GrayAM48) HasAlpha() bool {
+	return true
+}
+
+// NewGrayAM48 returns a new GrayAM48 with the given bounds and maximum
+// channel value.
+func NewGrayAM48(r image.Rectangle, m uint16) *GrayAM48 {
+	w, h := r.Dx(), r.Dy()
+	pix := make([]uint8, 4*w*h)
+	model := npcolor.GrayAM48Model{M: m}
+	return &GrayAM48{pix, 4 * w, r, model}
 }

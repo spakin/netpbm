@@ -17,8 +17,8 @@ import (
 
 // GrayM is an in-memory image whose At method returns npcolor.GrayM values.
 type GrayM struct {
-	// Pix holds the image's pixels, as gray values. The pixel at
-	// (x, y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*1].
+	// Pix holds the image's pixels as gray values. The pixel at (x, y)
+	// starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*1].
 	Pix []uint8
 	// Stride is the Pix stride (in bytes) between vertically adjacent pixels.
 	Stride int
