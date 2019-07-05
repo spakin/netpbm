@@ -247,24 +247,36 @@ type netpbmHeader struct {
 	Comments  []string // Aggregated list of comment lines
 }
 
+// getMagic is a helper function for GetNetpbmHeader that returns a Netpbm
+// magic pattern: "P" followed by a digit followed by a whitespace character.
+// Bounds-checking is performed on the digit.  getMagic returns the magic value
+// and a success code.
+func (nr *netpbmReader) getMagic(min, max rune) (string, bool) {
+	rune1 := nr.GetNextByteAsRune()
+	if rune1 != 'P' {
+		return "", false
+	}
+	rune2 := nr.GetNextByteAsRune()
+	if rune2 < min || rune2 > max {
+		return "", false
+	}
+	if !unicode.IsSpace(nr.GetNextByteAsRune()) {
+		return "", false
+	}
+	return string(rune1) + string(rune2), true
+}
+
 // GetNetpbmHeader parses the entire header (PBM, PGM, or PPM; raw or
 // plain) and returns it as a netpbmHeader (plus a success value).
 func (nr *netpbmReader) GetNetpbmHeader() (netpbmHeader, bool) {
 	var header netpbmHeader
 
 	// Read the magic value and skip the following whitespace.
-	rune1 := nr.GetNextByteAsRune()
-	if rune1 != 'P' {
+	var ok bool
+	header.Magic, ok = nr.getMagic('1', '6')
+	if !ok {
 		return netpbmHeader{}, false
 	}
-	rune2 := nr.GetNextByteAsRune()
-	if rune2 < '1' || rune2 > '6' {
-		return netpbmHeader{}, false
-	}
-	if !unicode.IsSpace(nr.GetNextByteAsRune()) {
-		return netpbmHeader{}, false
-	}
-	header.Magic = string(rune1) + string(rune2)
 
 	// PBM files (raw or plain) don't specify a maximum channel.  All other
 	// formats do.

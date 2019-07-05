@@ -12,7 +12,6 @@ import (
 	"io"
 	"strconv"
 	"strings"
-	"unicode"
 )
 
 // Define a type representing a known tuple type.
@@ -335,18 +334,11 @@ func (nr *netpbmReader) GetPamHeader() (netpbmHeader, bool) {
 	var header netpbmHeader
 
 	// Read the magic value and skip the following whitespace.
-	rune1 := nr.GetNextByteAsRune()
-	if rune1 != 'P' {
+	var ok bool
+	header.Magic, ok = nr.getMagic('7', '7')
+	if !ok {
 		return netpbmHeader{}, false
 	}
-	rune2 := nr.GetNextByteAsRune()
-	if rune2 != '7' {
-		return netpbmHeader{}, false
-	}
-	if !unicode.IsSpace(nr.GetNextByteAsRune()) {
-		return netpbmHeader{}, false
-	}
-	header.Magic = string(rune1) + string(rune2)
 
 	// Process each line in turn.
 ReadLoop:

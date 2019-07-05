@@ -66,10 +66,10 @@ func imageFromString(t *testing.T, imgStr string, iFmt Format) image.Image {
 	return img
 }
 
-// repeatDecodeEncode confirms that encoding and decoding do not alter a NetPBM
+// repeatDecodeEncode confirms that encoding and decoding do not alter a Netpbm
 // image.
 func repeatDecodeEncode(t *testing.T, imgStr string, dOpts *DecodeOptions, eOpts *EncodeOptions) {
-	// Decode a raw NetPBM image.
+	// Decode a raw Netpbm image.
 	r1 := flate.NewReader(bytes.NewBufferString(imgStr))
 	img, _, err := image.Decode(r1)
 	r1.Close()
@@ -170,9 +170,9 @@ func compareImageMetadata(t *testing.T, img0, img1 Image) {
 }
 
 // addRemoveAlpha confirms that adding an alpha channel and then removing it
-// does not alter a NetPBM image.
+// does not alter a Netpbm image.
 func addRemoveAlpha(t *testing.T, imgStr string, dOpts *DecodeOptions, eOpts *EncodeOptions) {
-	// Decode a NetPBM image.
+	// Decode a Netpbm image.
 	r1 := flate.NewReader(bytes.NewBufferString(imgStr))
 	img0, _, err := image.Decode(r1)
 	r1.Close()
@@ -218,7 +218,7 @@ func addRemoveAlpha(t *testing.T, imgStr string, dOpts *DecodeOptions, eOpts *En
 }
 
 // decodeImageCheckAlpha is a helper function for removeCompareAlpha that
-// decodes an image, interprets it as a NetPBM image, and confirms that the
+// decodes an image, interprets it as a Netpbm image, and confirms that the
 // image either contains or lacks an alpha channel, as specified.
 func decodeImageCheckAlpha(t *testing.T, imgStr string, alpha bool) Image {
 	r := flate.NewReader(bytes.NewBufferString(imgStr))
@@ -243,10 +243,10 @@ func decodeImageCheckAlpha(t *testing.T, imgStr string, alpha bool) Image {
 // removeCompareAlpha removes the alpha channel from one image then ensures it
 // matches a second image.
 func removeCompareAlpha(t *testing.T, imgStrA, imgStrNA string) {
-	// Decode a NetPBM image that contains an alpha channel.
+	// Decode a Netpbm image that contains an alpha channel.
 	imgA := decodeImageCheckAlpha(t, imgStrA, true)
 
-	// Decode a NetPBM image that lacks an alpha channel.
+	// Decode a Netpbm image that lacks an alpha channel.
 	imgNA := decodeImageCheckAlpha(t, imgStrNA, false)
 
 	// Remove the alpha channel from the image that has one.
