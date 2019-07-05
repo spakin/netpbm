@@ -155,6 +155,20 @@ func TestGetNextInt(t *testing.T) {
 	}
 }
 
+// compareImageMetadata is a helper function that ensures that two images have
+// the same color model and bounds.
+func compareImageMetadata(t *testing.T, img0, img1 Image) {
+	if img0.ColorModel() != img1.ColorModel() {
+		t.Fatal("Color model mismatch")
+	}
+	bnd0 := img0.Bounds()
+	bnd1 := img1.Bounds()
+	if bnd0.Min.X != bnd1.Min.X || bnd0.Min.Y != bnd1.Min.Y ||
+		bnd0.Max.X != bnd1.Max.X || bnd0.Max.Y != bnd1.Max.Y {
+		t.Fatalf("Image bounds don't match (%v vs. %v)", bnd0, bnd0)
+	}
+}
+
 // addRemoveAlpha confirms that adding an alpha channel and then removing it
 // does not alter a NetPBM image.
 func addRemoveAlpha(t *testing.T, imgStr string, dOpts *DecodeOptions, eOpts *EncodeOptions) {
@@ -185,17 +199,10 @@ func addRemoveAlpha(t *testing.T, imgStr string, dOpts *DecodeOptions, eOpts *En
 	}
 
 	// Ensure the before (img0) and after (img1) images' metadata match.
-	if img0.ColorModel() != img1.ColorModel() {
-		t.Fatal("Color model changed")
-	}
-	bnd0 := img0.Bounds()
-	bnd1 := img1.Bounds()
-	if bnd0.Min.X != bnd1.Min.X || bnd0.Min.Y != bnd1.Min.Y ||
-		bnd0.Max.X != bnd1.Max.X || bnd0.Max.Y != bnd1.Max.Y {
-		t.Fatalf("Image bounds changed from %v to %v", bnd0, bnd1)
-	}
+	compareImageMetadata(t, img0.(Image), img1.(Image))
 
 	// Ensure the before (img0) and after (img1) images' data match.
+	bnd0 := img0.Bounds()
 	for y := bnd0.Min.Y; y < bnd0.Max.Y; y++ {
 		for x := bnd0.Min.X; x < bnd0.Max.X; x++ {
 			c0 := img0.At(x, y)
@@ -252,17 +259,10 @@ func removeCompareAlpha(t *testing.T, imgStrA, imgStrNA string) {
 	}
 
 	// Ensure the two images' metadata match.
-	if imgNA.ColorModel() != imgRA.ColorModel() {
-		t.Fatal("Color model mismatch")
-	}
-	bndNA := imgNA.Bounds()
-	bndRA := imgRA.Bounds()
-	if bndNA.Min.X != bndRA.Min.X || bndNA.Min.Y != bndRA.Min.Y ||
-		bndNA.Max.X != bndRA.Max.X || bndNA.Max.Y != bndRA.Max.Y {
-		t.Fatalf("Image bounds don't match (%v vs. %v)", bndNA, bndNA)
-	}
+	compareImageMetadata(t, imgNA, imgRA)
 
 	// Ensure the two images' data match.
+	bndNA := imgNA.Bounds()
 	for y := bndNA.Min.Y; y < bndNA.Max.Y; y++ {
 		for x := bndNA.Min.X; x < bndNA.Max.X; x++ {
 			// Ignore pixels that were originally transparent
