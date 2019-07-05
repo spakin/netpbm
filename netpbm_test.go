@@ -210,32 +210,37 @@ func addRemoveAlpha(t *testing.T, imgStr string, dOpts *DecodeOptions, eOpts *En
 	}
 }
 
+// decodeImageCheckAlpha is a helper function for removeCompareAlpha that
+// decodes an image, interprets it as a NetPBM image, and confirms that the
+// image either contains or lacks an alpha channel, as specified.
+func decodeImageCheckAlpha(t *testing.T, imgStr string, alpha bool) Image {
+	r := flate.NewReader(bytes.NewBufferString(imgStr))
+	img, _, err := image.Decode(r)
+	r.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	nimg := img.(Image)
+	switch {
+	case nimg.HasAlpha() == alpha:
+	case alpha:
+		t.Fatal("Image was supposed to have an alpha channel but doesn't")
+	case !alpha:
+		t.Fatal("Image was not supposed to have an alpha channel but does")
+	default:
+		panic("Internal error -- we weren't supposed to get here")
+	}
+	return nimg
+}
+
 // removeCompareAlpha removes the alpha channel from one image then ensures it
 // matches a second image.
 func removeCompareAlpha(t *testing.T, imgStrA, imgStrNA string) {
 	// Decode a NetPBM image that contains an alpha channel.
-	rA := flate.NewReader(bytes.NewBufferString(imgStrA))
-	img, _, err := image.Decode(rA)
-	rA.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
-	imgA := img.(Image) // Image with alpha
-	if !imgA.HasAlpha() {
-		t.Fatal("Image was supposed to have an alpha channel but doesn't")
-	}
+	imgA := decodeImageCheckAlpha(t, imgStrA, true)
 
 	// Decode a NetPBM image that lacks an alpha channel.
-	rNA := flate.NewReader(bytes.NewBufferString(imgStrNA))
-	img, _, err = image.Decode(rNA)
-	rNA.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
-	imgNA := img.(Image) // Image with no alpha
-	if imgNA.HasAlpha() {
-		t.Fatal("Image was not supposed to have an alpha channel but does")
-	}
+	imgNA := decodeImageCheckAlpha(t, imgStrNA, false)
 
 	// Remove the alpha channel from the image that has one.
 	imgRA, ok := RemoveAlpha(imgA) // Image with alpha removed

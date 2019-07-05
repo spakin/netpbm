@@ -64,7 +64,7 @@ func TestNetpbmDecodePlainPBMPPMOpts(t *testing.T) {
 	}
 }
 
-// TestAddRemoveAlphaPPM determins if we can add an alpha channel to a PPM
+// TestAddRemoveAlphaPPM determines if we can add an alpha channel to a PPM
 // file, remove it, and wind up with the same PPM image as we started with.
 func TestAddRemoveAlphaPPM(t *testing.T) {
 	addRemoveAlpha(t, ppmRaw, nil, nil)
