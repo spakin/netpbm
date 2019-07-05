@@ -688,8 +688,8 @@ func RemoveAlpha(img Image) (Image, bool) {
 	// Copy the old image to the new pixel-by-pixel.
 	ul := r.Min
 	lr := r.Max
-	for j := ul.X; j <= lr.X; j++ {
-		for i := ul.Y; i <= lr.Y; i++ {
+	for j := ul.Y; j <= lr.Y; j++ {
+		for i := ul.X; i <= lr.X; i++ {
 			nimg.Set(i, j, img.At(i, j))
 		}
 	}
@@ -718,8 +718,8 @@ func AddAlpha(img Image) (Image, bool) {
 	// Copy the old image to the new pixel-by-pixel.
 	ul := r.Min
 	lr := r.Max
-	for j := ul.X; j <= lr.X; j++ {
-		for i := ul.Y; i <= lr.Y; i++ {
+	for j := ul.Y; j <= lr.Y; j++ {
+		for i := ul.X; i <= lr.X; i++ {
 			nimg.Set(i, j, img.At(i, j))
 		}
 	}

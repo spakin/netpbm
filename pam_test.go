@@ -63,3 +63,15 @@ func TestNetpbmDecodePlainPBMPAMOpts(t *testing.T) {
 		t.Fatalf("Expected PBM but received %s", img.Format())
 	}
 }
+
+// TestRemoveAlphaFromPAMRGBA checks if we can remove the alpha channel from an
+// RGBA image and wind up with an RGB image.
+func TestRemoveAlphaFromPAMRGBA(t *testing.T) {
+	removeCompareAlpha(t, pamRawColorAlpha, pamRawColor)
+}
+
+// TestRemoveAlphaFromPAMGrayA checks if we can remove the alpha channel from a
+// grayscale + alpha image and wind up with a grayscale image.
+func TestRemoveAlphaFromPAMGrayA(t *testing.T) {
+	removeCompareAlpha(t, pamRawGrayAlpha, pamRawGray)
+}
