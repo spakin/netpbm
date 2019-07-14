@@ -554,6 +554,44 @@ type EncodeOptions struct {
 	Comments  []string // Header comments, with no leading "#" or trailing newlines
 }
 
+// inferTupleType maps a color model to a tuple-type string.
+func inferTupleType(m color.Model) string {
+	// Convert a dummy color to the given model and from that to
+	// red, green, blue, and alpha values.
+	c := m.Convert(dummyColor{})
+	r, g, b, a := c.RGBA()
+
+	// Infer the tuple type from the resulting color.
+	tt := "RGB"
+	if r == g && g == b {
+		// If all colors equal 0 or max, assume black and white.
+		// Otherwise, assume grayscale.
+		if r == 0 || r == a {
+			tt = "BLACKANDWHITE"
+		} else {
+			tt = "GRAYSCALE"
+		}
+	}
+	if a < 0xffff {
+		tt += "_ALPHA"
+	}
+	return tt
+}
+
+// tupleTypeToFormat maps a tuple-type string to a Netpbm format.
+func tupleTypeToFormat(tt string) Format {
+	switch tt {
+	case "BLACKANDWHITE":
+		return PBM
+	case "GRAYSCALE":
+		return PGM
+	case "RGB":
+		return PPM
+	default:
+		return PAM
+	}
+}
+
 // Encode writes an arbitrary image in any of the Netpbm formats.  Given an
 // opts.Format of PNM, use the image's Format if img is a Netpbm image or PPM
 // if not.  Given an opts.MaxValue of 0, use the image's MaxValue if img is a
@@ -567,6 +605,11 @@ func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 		o = *opts
 	}
 
+	// If TupleType is not specified, infer it from the image type.
+	if o.TupleType == "" {
+		o.TupleType = inferTupleType(img.ColorModel())
+	}
+
 	// If Format is PNM (the zero value), replace it with an intelligently
 	// selected Netpbm format.
 	if o.Format == PNM {
@@ -574,14 +617,8 @@ func Encode(w io.Writer, img image.Image, opts *EncodeOptions) error {
 		case Image:
 			o.Format = img.Format()
 		default:
-			o.Format = PPM
+			o.Format = tupleTypeToFormat(o.TupleType)
 		}
-	}
-
-	// If Format is PAM and TupleType is not specified, infer the tuple
-	// type from the image type.
-	if o.Format == PAM && o.TupleType == "" {
-		o.TupleType = inferTupleType(img.ColorModel())
 	}
 
 	// If MaxValue is 0, replace it with an intelligently selected maximum

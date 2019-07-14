@@ -715,30 +715,6 @@ func (c dummyColor) RGBA() (uint32, uint32, uint32, uint32) {
 	return 0x4000, 0x5000, 0x6000, 0x7000
 }
 
-// inferTupleType maps a color model to a tuple-type string.
-func inferTupleType(m color.Model) string {
-	// Convert a dummy color to the given model and from that to
-	// red, green, blue, and alpha values.
-	c := m.Convert(dummyColor{})
-	r, g, b, a := c.RGBA()
-
-	// Infer the tuple type from the resulting color.
-	tt := "RGB"
-	if r == g && g == b {
-		// If all colors equal 0 or max, assume black and white.
-		// Otherwise, assume grayscale.
-		if r == 0 || r == a {
-			tt = "BLACKANDWHITE"
-		} else {
-			tt = "GRAYSCALE"
-		}
-	}
-	if a < 0xffff {
-		tt += "_ALPHA"
-	}
-	return tt
-}
-
 // A GrayAM is an in-memory image whose At method returns npcolor.GrayAM
 // values.
 type GrayAM struct {
