@@ -1,3 +1,3 @@
 module github.com/spakin/netpbm
 
-go 1.12
+go 1.11
