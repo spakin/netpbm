@@ -22,12 +22,13 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/spakin/netpbm/npcolor"
 	"image"
 	"image/color"
 	"io"
 	"strings"
 	"unicode"
+
+	"github.com/spakin/netpbm/npcolor"
 )
 
 // A netpbmReader extends bufio.Reader with the ability to read bytes

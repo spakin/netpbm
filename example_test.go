@@ -6,10 +6,11 @@ import (
 	"bytes"
 	"compress/flate"
 	"fmt"
-	"github.com/spakin/netpbm"
-	"github.com/spakin/netpbm/npcolor"
 	"image"
 	"strings"
+
+	"github.com/spakin/netpbm"
+	"github.com/spakin/netpbm/npcolor"
 )
 
 func ExampleDecode() {

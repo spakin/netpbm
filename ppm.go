@@ -7,11 +7,12 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/spakin/netpbm/npcolor"
 	"image"
 	"image/color"
 	"io"
 	"strings"
+
+	"github.com/spakin/netpbm/npcolor"
 )
 
 // An RGBM is an in-memory image whose At method returns npcolor.RGBM values.
@@ -429,8 +430,8 @@ func encodePPM(w io.Writer, img image.Image, opts *EncodeOptions) error {
 		fmt.Fprintln(w, "P6")
 	}
 	for _, cmt := range opts.Comments {
-		cmt = strings.ReplaceAll(cmt, "\n", " ")
-		cmt = strings.ReplaceAll(cmt, "\r", " ")
+		cmt = strings.Replace(cmt, "\n", " ", -1)
+		cmt = strings.Replace(cmt, "\r", " ", -1)
 		fmt.Fprintf(w, "# %s\n", cmt)
 	}
 	rect := img.Bounds()
