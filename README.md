@@ -1,9 +1,9 @@
 netpbm
 ======
 
-[![Build Status](https://travis-ci.com/spakin/netpbm.svg?branch=master)](https://travis-ci.com/spakin/netpbm)
+[![GitHub Actions](https://github.com/spakin/netpbm/actions/workflows/go.yml/badge.svg)](https://github.com/spakin/netpbm/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/spakin/netpbm)](https://goreportcard.com/report/github.com/spakin/netpbm)
-[![GoDoc](https://godoc.org/github.com/spakin/netpbm?status.svg)](https://godoc.org/github.com/spakin/netpbm)
+[![Go Reference](https://pkg.go.dev/badge/github.com/spakin/netpbm.svg)](https://pkg.go.dev/github.com/spakin/netpbm)
 
 Introduction
 ------------
