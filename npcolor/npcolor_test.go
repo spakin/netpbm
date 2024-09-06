@@ -283,3 +283,13 @@ func TestRGBAMPremult(t *testing.T) {
 		}
 	}
 }
+
+// TestZeroRGBMToRGBA ensures that a maxval of 0 doesn't inhibit conversion to
+// RGBA.
+func TestZeroRGBMToRGBA(t *testing.T) {
+	var c RGBAM
+	r, g, b, a := c.RGBA()
+	if r != 0 || g != 0 || b != 0 || a != 0 {
+		t.Fatalf("RGBA color [%d, %d, %d, %d] is not an alpha-premultiplied zero", r, g, b, a)
+	}
+}

@@ -1,5 +1,4 @@
 /*
-
 Package npcolor implements the color types and models used by Netpbm.
 
 RGBAM and RGBAM64 are analogous to the color package's RGBA and RGBA64
@@ -35,7 +34,6 @@ alpha channel.  Like the other colors represented in this package,
 these support variable maximum channel values.  npcolor.GrayAM
 supports any upper bound from 1–255, and npcolor.GrayM32 supports any
 upper bound from 1–65,535.
-
 */
 package npcolor
 
@@ -52,6 +50,9 @@ type GrayM struct {
 
 // RGBA converts a GrayM to alpha-premultiplied R, G, B, and A.
 func (c GrayM) RGBA() (r, g, b, a uint32) {
+	if c.M == 0 {
+		return
+	}
 	m := uint32(c.M)
 	y := (uint32(c.Y)*0xffff + m/2) / m
 	return y, y, y, 0xffff
@@ -83,6 +84,9 @@ type GrayM32 struct {
 
 // RGBA converts a GrayM32 to alpha-premultiplied R, G, B, and A.
 func (c GrayM32) RGBA() (r, g, b, a uint32) {
+	if c.M == 0 {
+		return
+	}
 	m := uint32(c.M)
 	y := (uint32(c.Y)*0xffff + m/2) / m
 	return y, y, y, 0xffff
@@ -115,6 +119,9 @@ type RGBM struct {
 
 // RGBA converts an RGBM to alpha-premultiplied R, G, B, and A.
 func (c RGBM) RGBA() (r, g, b, a uint32) {
+	if c.M == 0 {
+		return
+	}
 	m := uint32(c.M)
 	r = (uint32(c.R)*0xffff + m/2) / m
 	g = (uint32(c.G)*0xffff + m/2) / m
@@ -150,6 +157,9 @@ type RGBM64 struct {
 
 // RGBA converts an RGBM64 to alpha-premultiplied R, G, B, and A.
 func (c RGBM64) RGBA() (r, g, b, a uint32) {
+	if c.M == 0 {
+		return
+	}
 	m := uint32(c.M)
 	r = (uint32(c.R)*0xffff + m/2) / m
 	g = (uint32(c.G)*0xffff + m/2) / m
@@ -185,6 +195,9 @@ type GrayAM struct {
 
 // RGBA converts a GrayAM to alpha-premultiplied R, G, B, and A.
 func (c GrayAM) RGBA() (r, g, b, a uint32) {
+	if c.M == 0 {
+		return
+	}
 	m := uint32(c.M)
 	a = (uint32(c.A)*0xffff + m/2) / m
 	y := (uint32(c.Y)*a + m/2) / m
@@ -218,6 +231,9 @@ type GrayAM48 struct {
 
 // RGBA converts a GrayAM48 to alpha-premultiplied R, G, B, and A.
 func (c GrayAM48) RGBA() (r, g, b, a uint32) {
+	if c.M == 0 {
+		return
+	}
 	m := uint32(c.M)
 	a = (uint32(c.A)*0xffff + m/2) / m
 	y := (uint32(c.Y)*a + m/2) / m
@@ -251,6 +267,9 @@ type RGBAM struct {
 
 // RGBA converts an RGBAM to alpha-premultiplied R, G, B, and A.
 func (c RGBAM) RGBA() (r, g, b, a uint32) {
+	if c.M == 0 {
+		return
+	}
 	m := uint32(c.M)
 	a = (uint32(c.A)*0xffff + m/2) / m
 	r = (uint32(c.R)*a + m/2) / m
@@ -287,6 +306,9 @@ type RGBAM64 struct {
 
 // RGBA converts an RGBAM64 to alpha-premultiplied R, G, B, and A.
 func (c RGBAM64) RGBA() (r, g, b, a uint32) {
+	if c.M == 0 {
+		return
+	}
 	m := uint32(c.M)
 	a = (uint32(c.A)*0xffff + m/2) / m
 	r = (uint32(c.R)*a + m/2) / m
