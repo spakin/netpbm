@@ -1,5 +1,4 @@
 /*
-
 Package netpbm implements image decoders and encoders for the Netpbm image
 formats: PBM (black and white), PGM (grayscale), PPM (color), and PAM (black
 and white, grayscale, or color, as indicated by the image header).  Both "raw"
@@ -14,7 +13,6 @@ read a color image can also be given either a grayscale or a black-and-white
 image.
 
 The Netpbm home page is at http://netpbm.sourceforge.net/.
-
 */
 package netpbm
 
